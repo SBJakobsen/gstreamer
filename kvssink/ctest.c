@@ -5,7 +5,7 @@
 
 int tutorial_main (int argc, char *argv[])
 {
-    GstElement *pipeline, *source, *mpph264enc, *h264parse, *avdec_h264,*fpssink, *fakesink;
+    GstElement *pipeline, *source, *mpph264enc, *h264parse, *kvssink;
     GstBus *bus;
     GstMessage *msg;
     GstStateChangeReturn ret;
@@ -20,47 +20,44 @@ int tutorial_main (int argc, char *argv[])
     source      =   gst_element_factory_make("v4l2src",     "source");
     mpph264enc  =   gst_element_factory_make("mpph264enc",  "mpph264enc")
     h264parse   =   gst_element_factory_make("h264parse",   "h264parse");
-    avdec_h264  =   gst_element_factory_make("avdec_h264",  "avdec_h264");
-    fpssink     =   gst_element_factory_make("fpsdisplaysink", "fpssink");
-    fakesink    =   gst_element_factory_make("fakesink",    "fakesink");
+    kvssink     =   gst_element_factory_make("kvssink",     "kvssink");
 
     /* Create the empty pipeline */
     pipeline = gst_pipeline_new ("test-pipeline");
 
-    if (!pipeline || !source || !mpph264enc || !h264parse || !avdec_h264 || !fpssink || !fakesink) {
+    if (!pipeline || !source || !mpph264enc || !h264parse !kvssink) {
         g_printerr ("Not all elements could be created.\n");
         return -1;
     }
     
     /* Build the pipeline */
-    gst_bin_add_many (GST_BIN (pipeline), source, mpph264enc, h264parse, avdec_h264, fpssink, fakesink, NULL);
+    gst_bin_add_many (GST_BIN (pipeline), source, mpph264enc, h264parse, kvssink, NULL);
     
-    // HEEEEEEEEEEEERE
+    
     GstCaps *caps1;  
-    caps1 = gst_caps_from_string("video/x-raw,width=640,height=480, framerate=30/1");
-    if (gst_element_link_filtered(source, mpph264enc, caps) != TRUE) {
+    caps1 = gst_caps_from_string("video/x-raw,width=640,height=480, framerate=30/1,format=YUY2");
+    if (gst_element_link_filtered(source, mpph264enc, caps1) != TRUE) {
         g_printerr ("Source and mpph264 could not be linked.\n");
         gst_object_unref (pipeline);
         return -1;
     }
 
     GstCaps *caps2;  
-    caps2 = gst_caps_from_string("video/x-raw,width=640,height=480");
-    if (gst_element_link_filtered(h264parse, avdec_h264, caps) != TRUE) {
-        g_printerr ("Elements could not be linked with filter.\n");
+    caps2 = gst_caps_from_string("video/x-h264,stream-format=avc,alignment=au");
+    if (gst_element_link_filtered(h264parse, kvssink, caps2) != TRUE) {
+        g_printerr ("h264parse and kvssink could not be linked together.\n");
         gst_object_unref (pipeline);
         return -1;
     }
 
-    if (gst_element_link(mpph264enc, h264parse) || gst_element_link(avdec_h264, fpssink)
-    )!= TRUE) {
-        g_printerr ("Multiple elements could not be linked.\n");
+    if (gst_element_link(mpph264enc, h264parse) != TRUE) {
+        g_printerr ("mpph264enc and h264parse could not be linked\n");
         gst_object_unref (pipeline);
         return -1;
     }
 
     
-
+    // HEEEEEEEEEEEERE
 
 
 

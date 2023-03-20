@@ -1,4 +1,14 @@
 ##### CURRENT TESTING #####
+      # Live
+      echo "Setting width to $WIDTH and height to $HEIGHT"
+      v4l2-ctl -d4 --set-fmt-video=width=$WIDTH,height=$HEIGHT
+      gst-launch-1.0 -vvv v4l2src do-timestamp=TRUE device=/dev/video4 \
+            ! video/x-raw,width=$WIDTH,height=$HEIGHT,framerate=$FRAMERATE/1,format=YUY2 \
+            ! mpph264enc \
+            ! h264parse \
+            ! video/x-h264,stream-format=avc,alignment=au \
+            ! kvssink stream-name="$RESIN_DEVICE_UUID" framerate=$FRAMERATE restart-on-error=true retention-period=730 log-config="/usr/src/app/kvs_log_configuration" iot-certificate="iot-certificate,endpoint=$AWS_ENDPOINT,cert-path=$CERTSDIR/cert.pem,key-path=$CERTSDIR/privkey.pem,ca-path=$CERTSDIR/root-CA.pem,role-aliases=$ROLE_ALIAS"
+            
       # Dev1
 
       # Dev2

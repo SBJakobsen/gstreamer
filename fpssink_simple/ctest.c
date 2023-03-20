@@ -1,7 +1,8 @@
 #include <gst/gst.h>
 #include <stdbool.h>
+#include<unistd.h>
 
-#define DELAY_VALUE 700000
+#define DELAY_VALUE 7500
 
 int tutorial_main (int argc, char *argv[])
 {
@@ -11,7 +12,7 @@ int tutorial_main (int argc, char *argv[])
     GstStateChangeReturn ret;
 
     gchar *fps_msg;
-    guint delay_show_FPS = 0;
+    int delay_show_FPS = 0;
 
     /* Initialize GStreamer */
     gst_init (&argc, &argv);
@@ -51,10 +52,11 @@ int tutorial_main (int argc, char *argv[])
 
 
     /* Modify the source's properties */
-    g_object_set (source, "device", "/dev/video4", NULL);
+    g_object_set(source, "device", "/dev/video4", NULL);
 
     /* Modify the sink's properties */
-    g_object_set (fpssink, "text-overlay", false, "video-sink", fakesink, NULL);
+    g_object_set(fpssink, "text-overlay", false, "video-sink", fakesink, NULL);
+    g_object_set(fakesink, "sync", FALSE, NULL);
 
     /* Start playing */
     ret = gst_element_set_state (pipeline, GST_STATE_PLAYING);
@@ -105,11 +107,14 @@ int tutorial_main (int argc, char *argv[])
         g_object_get (G_OBJECT (fpssink), "last-message", &fps_msg, NULL);
         delay_show_FPS++;
         if (fps_msg != NULL) {
-            if ((delay_show_FPS % DELAY_VALUE) == 0) {
-            g_print ("Frame info: %s\n", fps_msg);
-            delay_show_FPS = 0;
+            if (delay_show_FPS > DELAY_VALUE) {
+                //g_print ("Value of delay_show_FPS: %i and value of DELAY_VALUE: %i\n", delay_show_FPS, DELAY_VALUE);
+                g_print ("Frame info: %s\n", fps_msg);
+                delay_show_FPS = 0;
             }
         }
+        g_free(fps_msg);
+        sleep(0.2);
     }
     
     stop_pipeline:

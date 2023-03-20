@@ -64,7 +64,7 @@ int tutorial_main (int argc, char *argv[])
         "do-timestamp", true, NULL);
     g_printerr ("mpph264enc and h264parse could not be linked\n");
 
-    g_print("Modified source's parameters")
+    g_print("Modified source's parameters");
 
     /* Modify the sink's properties */
     g_object_set (kvssink, 

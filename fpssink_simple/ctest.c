@@ -1,7 +1,7 @@
 #include <gst/gst.h>
 #include <stdbool.h>
 
-#define DELAY_VALUE 2000000
+#define DELAY_VALUE 700000
 
 int tutorial_main (int argc, char *argv[])
 {

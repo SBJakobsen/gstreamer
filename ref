@@ -7,7 +7,7 @@
 
 ##### HANDY COMMANDS #####
 
-      # fpssink working on rasp
+      # fpssink working on pi
       v4l2-ctl -d4 --set-fmt-video=width=$WIDTH,height=$HEIGHT
       gst-launch-1.0 -vvv v4l2src do-timestamp=TRUE device=/dev/video4 \
       ! video/x-raw,width=$WIDTH,height=$HEIGHT,framerate=$FRAMERATE/1 \

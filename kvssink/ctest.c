@@ -74,10 +74,7 @@ int tutorial_main (int argc, char *argv[])
         "log-config", "/usr/src/app/kvs_log_configuration",
         "iot-certificate", "iot-certificate,endpoint=crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com,cert-path=usr/src/app/certs/cert.pem,key-path=usr/src/app/certs/privkey.pem,ca-path=usr/src/app/certs/root-CA.pem,role-aliases=fbview-kinesis-video-access-role-alias",
         NULL); 
-
-        ! kvssink stream-name="$RESIN_DEVICE_UUID" framerate=$FRAMERATE restart-on-error=true retention-period=730 log-config="/usr/src/app/kvs_log_configuration" 
-        iot-certificate="iot-certificate,endpoint=$AWS_ENDPOINT,cert-path=$CERTSDIR/cert.pem,key-path=$CERTSDIR/privkey.pem,ca-path=$CERTSDIR/root-CA.pem,role-aliases=$ROLE_ALIAS"
-            
+ 
 
     /* Start playing */
     ret = gst_element_set_state (pipeline, GST_STATE_PLAYING);

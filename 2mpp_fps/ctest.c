@@ -1,21 +1,92 @@
 #include <gst/gst.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <unistd.h>
 
 #define DELAY_VALUE 7500
 
-int tutorial_main (int argc, char *argv[])
+bool quitloop = true;
+
+
+static gboolean
+bus_call (GstBus     *bus,
+          GstMessage *msg,
+          gpointer    data)
 {
+    GMainLoop *loop = (GMainLoop *) data;
+    g_print("Entered bus_call function\n");
+    g_printerr("Entered bus_call function\n");
+
+    switch (GST_MESSAGE_TYPE (msg)) {
+
+        case GST_MESSAGE_EOS:
+            g_print ("End of stream\n");
+            g_main_loop_quit (loop);
+        break;
+        case GST_MESSAGE_ERROR: {
+            GError *err = NULL;
+            gchar  *debug_info = NULL;
+            
+            gst_message_parse_error (msg, &err, &debug_info);
+            g_printerr ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
+            g_printerr ("Debugging information: %s\n", debug_info ? debug_info : "none");
+
+            g_clear_error (&err);
+            g_free (debug_info);
+            
+            if(quitloop){
+                g_main_loop_quit (loop);
+            }
+            
+            break;
+        }
+        case GST_MESSAGE_WARNING: {
+            GError *err = NULL;
+            gchar  *debug_info = NULL;
+        
+            gst_message_parse_warning (msg, &err, &debug_info);
+            g_print ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
+            g_print ("Debugging information: %s\n", debug_info ? debug_info : "none");
+
+            g_clear_error(&err);
+            g_free (debug_info);
+            break;
+        }
+        default:
+        break;
+    }
+
+    return TRUE;
+}
+
+
+
+int stream_main (int argc, char *argv[])
+{
+    GMainLoop *loop;
+
     GstElement *pipeline, *source, *mpph264enc, *h264parse, *avdec_h264, *fpssink, *fakesink;
     GstBus *bus;
+    guint bus_watch_id;
+
     GstMessage *msg;
     GstStateChangeReturn ret;
+
+    loop = g_main_loop_new (NULL, FALSE);
 
     gchar *fps_msg;
     int delay_show_FPS = 0;
 
     /* Initialize GStreamer */
     gst_init (&argc, &argv);
+
+    if(argc > 1){
+        printf("argc > 1, disabling quitloop\n");
+        quitloop = false;
+    }
+    else {
+        printf("argc = 1, quitloop is enabled");
+    }
 
     /* Create the elements */
     source      =   gst_element_factory_make("v4l2src",         "source");
@@ -33,7 +104,12 @@ int tutorial_main (int argc, char *argv[])
         return -1;
     }
 
-    /* Link elements */
+    /* Add a message handler */
+    bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline));
+    bus_watch_id = gst_bus_add_watch (bus, bus_call, loop);
+    gst_object_unref (bus);
+
+    
     /* Build the pipeline */
     gst_bin_add_many (GST_BIN (pipeline), source, mpph264enc, h264parse, avdec_h264, fpssink, NULL); //fakesink removed from here as it should be null
 
@@ -74,7 +150,8 @@ int tutorial_main (int argc, char *argv[])
 
     /* Modify the sink's properties */
     g_object_set(fpssink, "text-overlay", false, "video-sink", fakesink, NULL);
-    g_object_set(fakesink, "sync", TRUE, NULL);
+    g_object_set(fakesink, "sync", TRUE,
+        "silent", false, NULL);
 
     /* Start playing */
     ret = gst_element_set_state (pipeline, GST_STATE_PLAYING);
@@ -84,57 +161,61 @@ int tutorial_main (int argc, char *argv[])
         return -1;
     }
 
+    /* Iterate */
+    g_print ("Running...\n");
+    g_main_loop_run (loop);
+
     /* Wait until error or EOS */
-    bus = gst_element_get_bus (pipeline);
-    loop_start:
-    while(1)
-    {
+    // bus = gst_element_get_bus (pipeline);
+    // loop_start:
+    // while(1)
+    // {
         
-        msg = gst_bus_pop (bus);
-        /* Parse message */
-        if (msg != NULL) {
-            GError *err;
-            gchar *debug_info;
+    //     msg = gst_bus_pop (bus);
+    //     /* Parse message */
+    //     if (msg != NULL) {
+    //         GError *err;
+    //         gchar *debug_info;
             
-            switch (GST_MESSAGE_TYPE (msg)) {
-                case GST_MESSAGE_ERROR:
-                    gst_message_parse_error (msg, &err, &debug_info);
-                    g_print ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
-                    g_print ("Debugging information: %s\n", debug_info ? debug_info : "none");
-                    g_clear_error (&err);
-                    g_free (debug_info);
-                    goto stop_pipeline;
-                    break;
-                case GST_MESSAGE_WARNING:
-                    gst_message_parse_warning (msg, &err, &debug_info);
-                    g_print ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
-                    g_print ("Debugging information: %s\n", debug_info ? debug_info : "none");
-                    g_clear_error(&err);
-                    g_free (debug_info);
-                    break;
-                case GST_MESSAGE_EOS:
-                    g_print ("End-Of-Stream reached.\n");
-                    break;
-                default:
-                break;
+    //         switch (GST_MESSAGE_TYPE (msg)) {
+    //             case GST_MESSAGE_ERROR:
+    //                 gst_message_parse_error (msg, &err, &debug_info);
+    //                 g_print ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
+    //                 g_print ("Debugging information: %s\n", debug_info ? debug_info : "none");
+    //                 g_clear_error (&err);
+    //                 g_free (debug_info);
+    //                 goto stop_pipeline;
+    //                 break;
+    //             case GST_MESSAGE_WARNING:
+    //                 gst_message_parse_warning (msg, &err, &debug_info);
+    //                 g_print ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
+    //                 g_print ("Debugging information: %s\n", debug_info ? debug_info : "none");
+    //                 g_clear_error(&err);
+    //                 g_free (debug_info);
+    //                 break;
+    //             case GST_MESSAGE_EOS:
+    //                 g_print ("End-Of-Stream reached.\n");
+    //                 break;
+    //             default:
+    //             break;
                     
-            }
-            gst_message_unref (msg);
-        }   
+    //         }
+    //         gst_message_unref (msg);
+    //     }   
        
-        //g_printerr ("This point was reached.\n");
-        g_object_get (G_OBJECT (fpssink), "last-message", &fps_msg, NULL);
-        delay_show_FPS++;
-        if (fps_msg != NULL) {
-            if (delay_show_FPS > DELAY_VALUE) {
-                //g_print ("Value of delay_show_FPS: %i and value of DELAY_VALUE: %i\n", delay_show_FPS, DELAY_VALUE);
-                g_print ("Frame info: %s\n", fps_msg);
-                delay_show_FPS = 0;
-                g_free(fps_msg);
-            }
-        }
-        sleep(0.2);
-    }
+    //     g_printerr ("This point was reached.\n");
+    //     g_object_get (G_OBJECT (fpssink), "last-message", &fps_msg, NULL);
+    //     delay_show_FPS++;
+    //     if (fps_msg != NULL) {
+    //         if (delay_show_FPS > DELAY_VALUE) {
+    //             //g_print ("Value of delay_show_FPS: %i and value of DELAY_VALUE: %i\n", delay_show_FPS, DELAY_VALUE);
+    //             g_print ("Frame info: %s\n", fps_msg);
+    //             delay_show_FPS = 0;
+    //             g_free(fps_msg);
+    //         }
+    //     }
+    //     sleep(0.2);
+    // }
     
     stop_pipeline:
     g_print ("Program finished.\n");
@@ -148,6 +229,6 @@ int tutorial_main (int argc, char *argv[])
 int main (int argc, char *argv[])
 {
 
-    return tutorial_main (argc, argv);
+    return stream_main (argc, argv);
 
 }

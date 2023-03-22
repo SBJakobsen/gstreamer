@@ -33,7 +33,7 @@ int tutorial_main (int argc, char *argv[])
     }
 
     /* Build the pipeline */
-    gst_bin_add_many (GST_BIN (pipeline), source, converter, scaler, fpssink, fakesink, NULL);
+    gst_bin_add_many (GST_BIN (pipeline), source, converter, scaler, fpssink, NULL); //fakesink
     if (gst_element_link_many (source, converter, scaler, NULL) != TRUE) {
         g_printerr ("Multiple elements could not be linked.\n");
         gst_object_unref (pipeline);

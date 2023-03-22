@@ -99,16 +99,16 @@ int tutorial_main (int argc, char *argv[])
             switch (GST_MESSAGE_TYPE (msg)) {
                 case GST_MESSAGE_ERROR:
                     gst_message_parse_error (msg, &err, &debug_info);
-                    g_printerr ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
-                    g_printerr ("Debugging information: %s\n", debug_info ? debug_info : "none");
+                    g_print ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
+                    g_print ("Debugging information: %s\n", debug_info ? debug_info : "none");
                     g_clear_error (&err);
                     g_free (debug_info);
                     goto stop_pipeline;
                     break;
                 case GST_MESSAGE_WARNING:
                     gst_message_parse_warning (msg, &err, &debug_info);
-                    g_printerr ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
-                    g_printerr ("Debugging information: %s\n", debug_info ? debug_info : "none");
+                    g_print ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
+                    g_print ("Debugging information: %s\n", debug_info ? debug_info : "none");
                     g_clear_error(&err);
                     g_free (debug_info);
                     break;

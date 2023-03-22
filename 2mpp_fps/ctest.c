@@ -22,24 +22,25 @@ static void bus_call (GstBus *bus, GstMessage *msg, gpointer data)
         case GST_MESSAGE_ERROR: {
             GError *err = NULL;
             gchar  *debug_info = NULL;
-
+            
             gst_message_parse_error (msg, &err, &debug_info);
+            g_printerr ("GST_MESSAGE_ERROR.\n");
             g_printerr ("Error from element:%s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
             g_printerr ("Debug info: %s\n", debug_info ? debug_info : "none");
 
             g_clear_error (&err);
             g_free (debug_info);
             
-            // if(quitloop){
-            //     g_main_loop_quit (loop);
-            // }
+            if(quitloop){
+                g_main_loop_quit (loop);
+            }
             
             break;
         }
         case GST_MESSAGE_WARNING: {
             GError *err = NULL;
             gchar  *debug_info = NULL;
-            g_printerr ("GST_MESSAGE_WARNING. Is this printed?\n");
+            g_printerr ("GST_MESSAGE_WARNING.\n");
             gst_message_parse_warning (msg, &err, &debug_info);
             g_print ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
             g_print ("Debugging information: %s\n", debug_info ? debug_info : "none");
@@ -83,14 +84,10 @@ static void bus_call (GstBus *bus, GstMessage *msg, gpointer data)
 
 }
 
-static void fps_measurements_callback (GstElement * fpsdisplaysink,
-    gdouble fps,
-    gdouble droprate,
-    gdouble avgfps,
-    gpointer udata)
-    {
-        g_print("fps_measurements_callback fired ! \n");
-    }
+static void fps_measurements_callback (GstElement * fpsdisplaysink, gdouble fps, gdouble droprate, gdouble avgfps, gpointer udata)
+{
+    g_print("Fpsdisplay. FPS: %f,\tDropped: %f,\tAverage %f \n", fps, droprate, avgfps);
+}
 
 
 

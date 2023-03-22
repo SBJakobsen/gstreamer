@@ -54,6 +54,7 @@ static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer    data)
 
             gst_message_parse_tag (msg, &tags);
             g_print ("GST_MESSAGE_TAG from element %s\n", GST_OBJECT_NAME (msg->src));
+            handle_tags (tags);
             gst_tag_list_unref (tags);
             break;
         case GST_MESSAGE_STATE_CHANGED:

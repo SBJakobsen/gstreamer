@@ -8,7 +8,7 @@
 bool quitloop = true;
 
 
-static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer    data)
+static void bus_call (GstBus *bus, GstMessage *msg, gpointer data)
 {
     GMainLoop *loop = (GMainLoop *) data;
    
@@ -82,7 +82,6 @@ static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer    data)
         break;
     }
 
-    return TRUE;
 }
 
 
@@ -132,8 +131,8 @@ int stream_main (int argc, char *argv[])
 
     /* Add a message handler */
     bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline));
-    bus_watch_id = gst_bus_add_watch (bus, bus_call, loop);
-    gst_object_unref (bus);
+    gst_bus_add_signal_watch (bus);
+    g_signal_connect (bus, "message", G_CALLBACK (bus_call), NULL);
 
     
     /* Build the pipeline */

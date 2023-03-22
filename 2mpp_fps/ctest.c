@@ -8,14 +8,10 @@
 bool quitloop = true;
 
 
-static gboolean
-bus_call (GstBus     *bus,
-          GstMessage *msg,
-          gpointer    data)
+static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer    data)
 {
     GMainLoop *loop = (GMainLoop *) data;
     g_print("Entered bus_call function\n");
-    g_printerr("Entered bus_call function\n");
 
     switch (GST_MESSAGE_TYPE (msg)) {
 
@@ -26,7 +22,8 @@ bus_call (GstBus     *bus,
         case GST_MESSAGE_ERROR: {
             GError *err = NULL;
             gchar  *debug_info = NULL;
-            
+
+            g_printerr ("GST_MESSAGE_ERROR. Is this printed?\n");
             gst_message_parse_error (msg, &err, &debug_info);
             g_printerr ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
             g_printerr ("Debugging information: %s\n", debug_info ? debug_info : "none");
@@ -43,7 +40,7 @@ bus_call (GstBus     *bus,
         case GST_MESSAGE_WARNING: {
             GError *err = NULL;
             gchar  *debug_info = NULL;
-        
+            g_printerr ("GST_MESSAGE_WARNING. Is this printed?\n");
             gst_message_parse_warning (msg, &err, &debug_info);
             g_print ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
             g_print ("Debugging information: %s\n", debug_info ? debug_info : "none");
@@ -53,6 +50,7 @@ bus_call (GstBus     *bus,
             break;
         }
         default:
+            g_printerr("Value of GST_MESSAGE_TYPE enum: %d", GST_MESSAGE_TYPE (msg));
         break;
     }
 
@@ -85,7 +83,7 @@ int stream_main (int argc, char *argv[])
         quitloop = false;
     }
     else {
-        printf("argc = 1, quitloop is enabled");
+        printf("argc = 1, quitloop is enabled\n");
     }
 
     /* Create the elements */

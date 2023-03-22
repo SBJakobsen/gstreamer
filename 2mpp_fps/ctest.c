@@ -49,12 +49,12 @@ static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer    data)
             g_free (debug_info);
             break;
         }
-        case GST_MESSAGE_TAG:
-            GstTagList *tags = NULL;
+        case GST_MESSAGE_TAG: // Ignore Tags
+            // GstTagList *tags = NULL;
 
-            gst_message_parse_tag (msg, &tags);
-            g_print ("GST_MESSAGE_TAG from element %s\n", GST_OBJECT_NAME (msg->src));
-            gst_tag_list_unref (tags);
+            // gst_message_parse_tag (msg, &tags);
+            // g_print ("GST_MESSAGE_TAG from element %s\n", GST_OBJECT_NAME (msg->src));
+            // gst_tag_list_unref (tags);
             break;
         case GST_MESSAGE_STATE_CHANGED:
             g_print("GST_MESSAGE_STATE_CHANGED\n");

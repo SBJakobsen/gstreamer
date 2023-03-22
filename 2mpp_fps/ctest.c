@@ -74,9 +74,7 @@ int tutorial_main (int argc, char *argv[])
 
     /* Modify the sink's properties */
     g_object_set(fpssink, "text-overlay", false, "video-sink", fakesink, NULL);
-    g_object_set(fakesink, "sync", TRUE,
-        "silent", false,
-        NULL);
+    g_object_set(fakesink, "sync", TRUE, NULL);
 
     /* Start playing */
     ret = gst_element_set_state (pipeline, GST_STATE_PLAYING);
@@ -125,16 +123,16 @@ int tutorial_main (int argc, char *argv[])
         }   
        
         //g_printerr ("This point was reached.\n");
-        // g_object_get (G_OBJECT (fpssink), "last-message", &fps_msg, NULL);
-        // delay_show_FPS++;
-        // if (fps_msg != NULL) {
-        //     if (delay_show_FPS > DELAY_VALUE) {
-        //         //g_print ("Value of delay_show_FPS: %i and value of DELAY_VALUE: %i\n", delay_show_FPS, DELAY_VALUE);
-        //         g_print ("Frame info: %s\n", fps_msg);
-        //         delay_show_FPS = 0;
-        //         g_free(fps_msg);
-        //     }
-        // }
+        g_object_get (G_OBJECT (fpssink), "last-message", &fps_msg, NULL);
+        delay_show_FPS++;
+        if (fps_msg != NULL) {
+            if (delay_show_FPS > DELAY_VALUE) {
+                //g_print ("Value of delay_show_FPS: %i and value of DELAY_VALUE: %i\n", delay_show_FPS, DELAY_VALUE);
+                g_print ("Frame info: %s\n", fps_msg);
+                delay_show_FPS = 0;
+                g_free(fps_msg);
+            }
+        }
         sleep(0.2);
     }
     

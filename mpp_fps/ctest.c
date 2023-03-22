@@ -20,7 +20,7 @@ int tutorial_main (int argc, char *argv[])
     /* Create the elements */
     source      =   gst_element_factory_make("v4l2src",         "source");
     mpph264enc  =   gst_element_factory_make("mpph264enc",      "mpph264enc");
-    h264parse   =   gst_element_factory_make("videoscale",      "scaler");
+    h264parse   =   gst_element_factory_make("h264parse",       "h264parse");
     avdec_h264  =   gst_element_factory_make("avdec_h264",      "avdec_h264");
     fpssink     =   gst_element_factory_make("fpsdisplaysink",  "fpssink");
     fakesink    =   gst_element_factory_make("fakesink",        "fakesink");

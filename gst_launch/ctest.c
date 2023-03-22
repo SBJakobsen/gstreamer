@@ -17,7 +17,7 @@ main (int argc, char *argv[])
     
     if(argc>1)
     {
-        printf("Running custom pipeline from CLI");
+        printf("Running custom pipeline from CLI \n");
         pipeline = gst_parse_launch(argv[1], &error);
     }
     else{

@@ -25,7 +25,7 @@
       ! h264parse \
       ! video/x-h264,stream-format=avc,alignment=au \
       ! avdec_h264 \
-      ! fpsdisplaysink >> fpstest.log
+      ! fpsdisplaysink text-overlay=false video-sink=fakesink > fpstest.log
 
       # fpssink working on pc
       v4l2-ctl -d4 --set-fmt-video=width=640,height=480

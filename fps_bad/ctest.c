@@ -52,7 +52,9 @@ int tutorial_main (int argc, char *argv[])
 
 
     /* Modify the source's properties */
-    g_object_set(source, "device", "/dev/video4", NULL);
+    g_object_set(source, "device", "/dev/video4", 
+        NULL);
+        //"num-buffers", 10,
 
     /* Modify the sink's properties */
     g_object_set(fpssink, "text-overlay", false, "video-sink", fakesink, NULL);

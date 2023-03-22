@@ -11,7 +11,7 @@ bool quitloop = true;
 static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer    data)
 {
     GMainLoop *loop = (GMainLoop *) data;
-    g_print("Entered bus_call function\n");
+   
 
     switch (GST_MESSAGE_TYPE (msg)) {
 
@@ -49,8 +49,29 @@ static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer    data)
             g_free (debug_info);
             break;
         }
+        case GST_MESSAGE_TAG:
+            g_print("GST_MESSAGE_TAG\n");
+            break;
+        case GST_MESSAGE_STATE_CHANGED:
+            g_print("GST_MESSAGE_STATE_CHANGED\n");
+            break;
+        case GST_MESSAGE_NEW_CLOCK:
+            g_print("GST_MESSAGE_NEW_CLOCK\n");
+            break;
+        case GST_MESSAGE_LATENCY:
+            g_print("GST_MESSAGE_LATENCY\n");
+            break;
+        case GST_MESSAGE_ASYNC_DONE:
+            g_print("GST_MESSAGE_ASYNC_DONE\n");
+            break;
+        case GST_MESSAGE_QOS:
+            g_print("GST_MESSAGE_QOS\n");
+            break;
+        case GST_MESSAGE_STREAM_START:
+            g_print("GST_MESSAGE_STREAM_START\n");
+            break;
         default:
-            g_printerr("Value of GST_MESSAGE_TYPE enum: %d", GST_MESSAGE_TYPE (msg));
+            g_printerr("GST_MESSAGE_TYPE enum: %d\n", GST_MESSAGE_TYPE (msg));
         break;
     }
 
@@ -79,11 +100,11 @@ int stream_main (int argc, char *argv[])
     gst_init (&argc, &argv);
 
     if(argc > 1){
-        printf("argc > 1, disabling quitloop\n");
+        g_print("argc > 1, disabling quitloop\n");
         quitloop = false;
     }
     else {
-        printf("argc = 1, quitloop is enabled\n");
+        g_print("argc = 1, quitloop is enabled\n");
     }
 
     /* Create the elements */
@@ -162,60 +183,7 @@ int stream_main (int argc, char *argv[])
     /* Iterate */
     g_print ("Running...\n");
     g_main_loop_run (loop);
-
-    /* Wait until error or EOS */
-    // bus = gst_element_get_bus (pipeline);
-    // loop_start:
-    // while(1)
-    // {
-        
-    //     msg = gst_bus_pop (bus);
-    //     /* Parse message */
-    //     if (msg != NULL) {
-    //         GError *err;
-    //         gchar *debug_info;
-            
-    //         switch (GST_MESSAGE_TYPE (msg)) {
-    //             case GST_MESSAGE_ERROR:
-    //                 gst_message_parse_error (msg, &err, &debug_info);
-    //                 g_print ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
-    //                 g_print ("Debugging information: %s\n", debug_info ? debug_info : "none");
-    //                 g_clear_error (&err);
-    //                 g_free (debug_info);
-    //                 goto stop_pipeline;
-    //                 break;
-    //             case GST_MESSAGE_WARNING:
-    //                 gst_message_parse_warning (msg, &err, &debug_info);
-    //                 g_print ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
-    //                 g_print ("Debugging information: %s\n", debug_info ? debug_info : "none");
-    //                 g_clear_error(&err);
-    //                 g_free (debug_info);
-    //                 break;
-    //             case GST_MESSAGE_EOS:
-    //                 g_print ("End-Of-Stream reached.\n");
-    //                 break;
-    //             default:
-    //             break;
-                    
-    //         }
-    //         gst_message_unref (msg);
-    //     }   
-       
-    //     g_printerr ("This point was reached.\n");
-    //     g_object_get (G_OBJECT (fpssink), "last-message", &fps_msg, NULL);
-    //     delay_show_FPS++;
-    //     if (fps_msg != NULL) {
-    //         if (delay_show_FPS > DELAY_VALUE) {
-    //             //g_print ("Value of delay_show_FPS: %i and value of DELAY_VALUE: %i\n", delay_show_FPS, DELAY_VALUE);
-    //             g_print ("Frame info: %s\n", fps_msg);
-    //             delay_show_FPS = 0;
-    //             g_free(fps_msg);
-    //         }
-    //     }
-    //     sleep(0.2);
-    // }
     
-    stop_pipeline:
     g_print ("Program finished.\n");
     /* Free resources */
     gst_object_unref (bus);

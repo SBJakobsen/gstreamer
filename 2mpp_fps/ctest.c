@@ -5,7 +5,7 @@
 
 #define DELAY_VALUE 7500
 
-bool quitloop = false;
+bool quitloop = true;
 
 
 static void bus_call (GstBus *bus, GstMessage *msg, gpointer data)
@@ -81,7 +81,53 @@ static void bus_call (GstBus *bus, GstMessage *msg, gpointer data)
             g_printerr("GST_MESSAGE_TYPE enum: %d\n", GST_MESSAGE_TYPE (msg));
         break;
     }
+}
 
+static void v4l2src_call (GstElement * source, GstMessage *msg, gpointer data)
+{
+    GMainLoop *loop = (GMainLoop *) data;
+   
+
+    switch (GST_MESSAGE_TYPE (msg)) {
+
+        case GST_MESSAGE_EOS:
+            g_print ("End of stream\n");
+            g_main_loop_quit (loop);
+        break;
+        case GST_MESSAGE_ERROR: {
+            GError *err = NULL;
+            gchar  *debug_info = NULL;
+            
+            gst_message_parse_error (msg, &err, &debug_info);
+            g_printerr ("GST_MESSAGE_ERROR specifically from v4l2src.\n");
+            g_printerr ("Error from element:%s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
+            g_printerr ("Debug info: %s\n", debug_info ? debug_info : "none");
+
+            g_clear_error (&err);
+            g_free (debug_info);
+            
+            if(quitloop){
+                g_main_loop_quit (loop);
+            }
+            
+            break;
+        }
+        case GST_MESSAGE_WARNING: {
+            GError *err = NULL;
+            gchar  *debug_info = NULL;
+            g_printerr ("GST_MESSAGE_WARNING specifically from v4l2src.\n");
+            gst_message_parse_warning (msg, &err, &debug_info);
+            g_print ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
+            g_print ("Debugging information: %s\n", debug_info ? debug_info : "none");
+
+            g_clear_error(&err);
+            g_free (debug_info);
+            break;
+        }
+        default:
+            g_printerr("GST_MESSAGE_TYPE enum: %d\n", GST_MESSAGE_TYPE (msg));
+        break;
+    }
 }
 
 static void fps_measurements_callback (GstElement * fpsdisplaysink, gdouble fps, gdouble droprate, gdouble avgfps, gpointer udata)
@@ -139,6 +185,7 @@ int stream_main (int argc, char *argv[])
     gst_bus_add_signal_watch (bus);
     g_signal_connect (bus, "message", G_CALLBACK (bus_call), loop);
     g_signal_connect (fpssink, "fps-measurements", G_CALLBACK(fps_measurements_callback), NULL);
+    g_signal_connect (source, "message", G_CALLBACK(v4l2src_call), loop);
 
     
     /* Build the pipeline */

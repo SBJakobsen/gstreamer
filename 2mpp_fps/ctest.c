@@ -29,6 +29,9 @@ static void bus_call (GstBus *bus, GstMessage *msg, gpointer data)
             g_printerr ("Error from element:%s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
             g_printerr ("Debug info: %s\n", debug_info ? debug_info : "none");
 
+            // Stringcompare GST_OBJECT_NAME == "h264parse" -> reset pipeline
+            //if(strcmp(GST_OBJECT_NAME(msg->src))
+
             g_clear_error (&err);
             g_free (debug_info);
             
@@ -78,49 +81,6 @@ static void bus_call (GstBus *bus, GstMessage *msg, gpointer data)
         case GST_MESSAGE_STREAM_START:
             g_print("GST_MESSAGE_STREAM_START\n");
             break;
-        default:
-            g_printerr("GST_MESSAGE_TYPE enum: %d\n", GST_MESSAGE_TYPE (msg));
-        break;
-    }
-}
-
-static void v4l2src_call (GstElement * source, GstMessage *msg, gpointer data)
-{
-    GMainLoop *loop = (GMainLoop *) data;
-   
-    g_print ("CUSTOM MESSAGE CALLBACK WAS CALLED\n");
-    switch (GST_MESSAGE_TYPE (msg)) {
-
-        case GST_MESSAGE_EOS:
-            g_print ("End of stream\n");
-            g_main_loop_quit (loop);
-        break;
-        case GST_MESSAGE_ERROR: {
-            GError *err = NULL;
-            gchar  *debug_info = NULL;
-            
-            gst_message_parse_error (msg, &err, &debug_info);
-            g_printerr ("GST_MESSAGE_ERROR\n");
-            g_printerr ("Error from element:%s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
-            g_printerr ("Debug info: %s\n", debug_info ? debug_info : "none");
-
-            g_clear_error (&err);
-            g_free (debug_info);
-            
-            break;
-        }
-        case GST_MESSAGE_WARNING: {
-            GError *err = NULL;
-            gchar  *debug_info = NULL;
-            g_printerr ("GST_MESSAGE_WARNING\n");
-            gst_message_parse_warning (msg, &err, &debug_info);
-            g_print ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
-            g_print ("Debugging information: %s\n", debug_info ? debug_info : "none");
-
-            g_clear_error(&err);
-            g_free (debug_info);
-            break;
-        }
         default:
             g_printerr("GST_MESSAGE_TYPE enum: %d\n", GST_MESSAGE_TYPE (msg));
         break;
@@ -186,9 +146,6 @@ int stream_main (int argc, char *argv[])
     gst_bus_add_signal_watch (bus);
     g_signal_connect (bus, "message", G_CALLBACK (bus_call), loop);
     g_signal_connect (fpssink, "fps-measurements", G_CALLBACK(fps_measurements_callback), NULL);
-    g_signal_connect (source, "message", G_CALLBACK(v4l2src_call), loop);
-    g_signal_connect (h264parse, "message", G_CALLBACK(v4l2src_call), loop);
-    g_signal_connect (avdec_h264, "message", G_CALLBACK(v4l2src_call), loop);
 
     
     /* Build the pipeline */

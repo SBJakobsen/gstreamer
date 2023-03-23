@@ -9,6 +9,15 @@
             ! video/x-h264,stream-format=avc,alignment=au \
             ! kvssink stream-name="$RESIN_DEVICE_UUID" framerate=$FRAMERATE restart-on-error=true retention-period=730 log-config="/usr/src/app/kvs_log_configuration" iot-certificate="iot-certificate,endpoint=$AWS_ENDPOINT,cert-path=$CERTSDIR/cert.pem,key-path=$CERTSDIR/privkey.pem,ca-path=$CERTSDIR/root-CA.pem,role-aliases=$ROLE_ALIAS"
             
+
+            
+
+
+
+
+
+
+
       # Dev1
 
       # Dev2

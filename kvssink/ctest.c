@@ -1,43 +1,164 @@
 #include <gst/gst.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <time.h>
 
-#define DELAY_VALUE 2000000
+#define DELAY_VALUE 7500
 
-int tutorial_main (int argc, char *argv[])
+bool quitloop = true;
+
+
+static void bus_call (GstBus *bus, GstMessage *msg, gpointer data)
 {
+    GMainLoop *loop = (GMainLoop *) data;
+   
+
+    switch (GST_MESSAGE_TYPE (msg)) {
+
+        case GST_MESSAGE_EOS:
+            g_print ("End of stream\n");
+            g_main_loop_quit (loop);
+        break;
+        case GST_MESSAGE_ERROR: {
+            GError *err = NULL;
+            gchar  *debug_info = NULL;
+            
+            gst_message_parse_error (msg, &err, &debug_info);
+            g_printerr ("GST_MESSAGE_ERROR.\n");
+            g_printerr ("Error from element:%s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
+            g_printerr ("Debug info: %s\n", debug_info ? debug_info : "none");
+
+            // Stringcompare GST_OBJECT_NAME == "h264parse" -> reset pipeline
+            //if(strcmp(GST_OBJECT_NAME(msg->src))
+
+            g_clear_error (&err);
+            g_free (debug_info);
+            
+            if(quitloop){
+                g_main_loop_quit (loop);
+            }
+            
+            break;
+        }
+        case GST_MESSAGE_WARNING: {
+            GError *err = NULL;
+            gchar  *debug_info = NULL;
+            g_printerr ("GST_MESSAGE_WARNING.\n");
+            gst_message_parse_warning (msg, &err, &debug_info);
+            g_print ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
+            g_print ("Debugging information: %s\n", debug_info ? debug_info : "none");
+
+            g_clear_error(&err);
+            g_free (debug_info);
+            break;
+        }
+        case GST_MESSAGE_TAG: // Ignore Tags
+            // GstTagList *tags = NULL;
+
+            // gst_message_parse_tag (msg, &tags);
+            // g_print ("GST_MESSAGE_TAG from element %s\n", GST_OBJECT_NAME (msg->src));
+            // gst_tag_list_unref (tags);
+            break;
+        case GST_MESSAGE_STATE_CHANGED:
+            g_print("GST_MESSAGE_STATE_CHANGED\n");
+            break;
+        case GST_MESSAGE_NEW_CLOCK:
+            g_print("GST_MESSAGE_NEW_CLOCK\n");
+            break;
+        case GST_MESSAGE_STREAM_STATUS:
+            g_print("GST_MESSAGE_STREAM_STATUS\n");
+            break;
+        case GST_MESSAGE_LATENCY:
+            g_print("GST_MESSAGE_LATENCY\n");
+            break;
+        case GST_MESSAGE_ASYNC_DONE:
+            g_print("GST_MESSAGE_ASYNC_DONE\n");
+            break;
+        case GST_MESSAGE_QOS:           // Ignore QoS
+            //g_print("GST_MESSAGE_QOS\n");
+            break;
+        case GST_MESSAGE_STREAM_START:
+            g_print("GST_MESSAGE_STREAM_START\n");
+            break;
+        default:
+            g_printerr("GST_MESSAGE_TYPE enum: %d\n", GST_MESSAGE_TYPE (msg));
+        break;
+    }
+}
+
+static void fps_measurements_callback (GstElement * fpsdisplaysink, gdouble fps, gdouble droprate, gdouble avgfps, gpointer udata)
+{
+    
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    g_print("Fpsdisplay %02d:%02d:%02d. FPS: %f,\tDropped: %f,\tAverage %f \n", tm.tm_hour, tm.tm_min, tm.tm_sec, fps, droprate, avgfps);
+
+}
+
+
+
+int stream_main (int argc, char *argv[])
+{
+    GMainLoop *loop;
+
     GstElement *pipeline, *source, *mpph264enc, *h264parse, *kvssink;
     GstBus *bus;
+    guint bus_watch_id;
+
     GstMessage *msg;
     GstStateChangeReturn ret;
 
+    loop = g_main_loop_new (NULL, FALSE);
+
     gchar *fps_msg;
-    guint delay_show_FPS = 0;
+    int delay_show_FPS = 0;
 
     /* Initialize GStreamer */
     gst_init (&argc, &argv);
 
+    if(argc > 1){
+        g_print("argc > 1, disabling quitloop\n");
+        quitloop = false;
+    }
+    else {
+        g_print("argc = 1, quitloop is enabled\n");
+    }
+
     /* Create the elements */
-    source      =   gst_element_factory_make("v4l2src",     "source");
-    mpph264enc  =   gst_element_factory_make("mpph264enc",  "mpph264enc");
-    h264parse   =   gst_element_factory_make("h264parse",   "h264parse");
-    kvssink     =   gst_element_factory_make("kvssink",     "kvssink");
+    source      =   gst_element_factory_make("v4l2src",         "source");
+    mpph264enc  =   gst_element_factory_make("mpph264enc",      "mpph264enc");
+    h264parse   =   gst_element_factory_make("h264parse",       "h264parse");
+    kvssink     =   gst_element_factory_make("kvssink",         "kvssink");
 
     /* Create the empty pipeline */
     pipeline = gst_pipeline_new ("test-pipeline");
 
-    if (!pipeline || !source || !mpph264enc || !h264parse  || !kvssink) {
+    if (!pipeline || !source || !mpph264enc || !h264parse || !kvssink) {
         g_printerr ("Not all elements could be created.\n");
         return -1;
     }
+
+    /* Add a message handler */
+    bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline));
+    gst_bus_add_signal_watch (bus);
+    g_signal_connect (bus, "message", G_CALLBACK (bus_call), loop);
+
     
     /* Build the pipeline */
-    gst_bin_add_many (GST_BIN (pipeline), source, mpph264enc, h264parse, kvssink, NULL);
-    g_printerr("Pipeline built");
+    gst_bin_add_many (GST_BIN (pipeline), source, mpph264enc, h264parse, kvssink, NULL); //fakesink removed from here as it should be null
 
-    GstCaps *caps1;  
-    caps1 = gst_caps_from_string("video/x-raw,width=640,height=480, framerate=30/1,format=YUY2");
+    // source -> mpph264 -> 264parse > kvssink
+    GstCaps *caps1;
+    caps1 = gst_caps_from_string("video/x-raw,width=640,height=480,framerate=30/1");
     if (gst_element_link_filtered(source, mpph264enc, caps1) != TRUE) {
-        g_printerr ("Source and mpph264 could not be linked.\n");
+        g_printerr ("Source and mpph264enc could not be linked\n");
+        gst_object_unref (pipeline);
+        return -1;
+    }
+
+    if (gst_element_link (mpph264enc, h264parse) != TRUE) {
+        g_printerr ("Mpph264enc and h264parsecould not be linked.\n");
         gst_object_unref (pipeline);
         return -1;
     }
@@ -45,39 +166,25 @@ int tutorial_main (int argc, char *argv[])
     GstCaps *caps2;  
     caps2 = gst_caps_from_string("video/x-h264,stream-format=avc,alignment=au");
     if (gst_element_link_filtered(h264parse, kvssink, caps2) != TRUE) {
-        g_printerr ("h264parse and kvssink could not be linked together.\n");
+        g_printerr ("h264parse and avdec_h264 could not be linked");
         gst_object_unref (pipeline);
         return -1;
     }
 
-    if (gst_element_link(mpph264enc, h264parse) != TRUE) {
-        g_printerr ("mpph264enc and h264parse could not be linked\n");
-        gst_object_unref (pipeline);
-        return -1;
-    }
-
-    g_print("Elements linked");
 
 
     /* Modify the source's properties */
-    g_object_set (source, "device", "/dev/video4",
-        "do-timestamp", true, NULL);
-    g_printerr ("mpph264enc and h264parse could not be linked\n");
-
-    g_print("Modified source's parameters");
+    g_object_set(source, "device", "/dev/video4", 
+        NULL);
 
     /* Modify the sink's properties */
-    g_object_set (kvssink, 
-        "stream-name", "7dcd0a6b9d90f6976b285442fa72c25a", 
-        "framerate", 30, 
+    g_object_set(kvssink, "stream-name", "15e0dc81d12c414aa02b49b990921c8d",
+        "framerate", 30,
         "restart-on-error", true,
         "retention-period", 730,
         "log-config", "/usr/src/app/kvs_log_configuration",
-        "iot-certificate", "iot-certificate,endpoint=crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com,cert-path=usr/src/app/certs/cert.pem,key-path=usr/src/app/certs/privkey.pem,ca-path=usr/src/app/certs/root-CA.pem,role-aliases=fbview-kinesis-video-access-role-alias",
-        NULL); 
-    
-    g_print("Modified sinks parameters");
- 
+        "iot-certificate", "iot-certificate,endpoint=crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com,cert-path=/usr/src/app/certs/cert.pem,key-path=/usr/src/app/certs/privkey.pem,ca-path=/usr/src/app/certs/root-CA.pem,role-aliases=fbview-kinesis-video-access-role-alias",
+        NULL);
 
     /* Start playing */
     ret = gst_element_set_state (pipeline, GST_STATE_PLAYING);
@@ -87,40 +194,10 @@ int tutorial_main (int argc, char *argv[])
         return -1;
     }
 
-    g_print("Started Playing");
-
-    /* Wait until error or EOS */
-    bus = gst_element_get_bus (pipeline);
+    /* Iterate */
+    g_print ("Running...\n");
+    g_main_loop_run (loop);
     
-    msg = gst_bus_timed_pop_filtered (bus, GST_CLOCK_TIME_NONE,
-      GST_MESSAGE_ERROR | GST_MESSAGE_EOS);
-
-    if (msg != NULL) {
-        GError *err;
-        gchar *debug_info;
-
-        switch (GST_MESSAGE_TYPE (msg)) {
-        case GST_MESSAGE_ERROR:
-            gst_message_parse_error (msg, &err, &debug_info);
-            g_printerr ("Error received from element %s: %s\n",
-                GST_OBJECT_NAME (msg->src), err->message);
-            g_printerr ("Debugging information: %s\n",
-                debug_info ? debug_info : "none");
-            g_clear_error (&err);
-            g_free (debug_info);
-            break;
-        case GST_MESSAGE_EOS:
-            g_print ("End-Of-Stream reached.\n");
-            break;
-        default:
-            /* We should not reach here because we only asked for ERRORs and EOS */
-            g_printerr ("Unexpected message received.\n");
-            break;
-        }
-        gst_message_unref (msg);
-  }
-    
-    stop_pipeline:
     g_print ("Program finished.\n");
     /* Free resources */
     gst_object_unref (bus);
@@ -132,6 +209,6 @@ int tutorial_main (int argc, char *argv[])
 int main (int argc, char *argv[])
 {
 
-    return tutorial_main (argc, argv);
+    return stream_main (argc, argv);
 
 }

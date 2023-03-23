@@ -178,7 +178,7 @@ int stream_main (int argc, char *argv[])
         NULL);
 
     /* Modify the sink's properties */
-    g_object_set(kvssink, "stream-name", "15e0dc81d12c414aa02b49b990921c8d",
+    g_object_set(kvssink, "strean-name", "15e0dc81d12c414aa02b49b990921c8d",
         "framerate", 30,
         "restart-on-error", true,
         "retention-period", 730,

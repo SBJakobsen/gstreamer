@@ -185,7 +185,7 @@ int stream_main (int argc, char *argv[])
         "framerate", 30,
         "restart-on-error", true,
         "retention-perion", 730,
-        "log-config", "/usr/src/app/kvs_log_configuration",
+        "log-config", "./../../kvs_log_configuration",
         "iot-certificate", "iot-certificate,endpoint=crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com,cert-path=../../certs/cert.pem,key-path=../../certs/privkey.pem,ca-path=../../certs/root-CA.pem,role-aliases=fbview-kinesis-video-access-role-alias",
         NULL);
 

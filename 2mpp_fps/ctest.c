@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <time.h>
 
 #define DELAY_VALUE 7500
 
@@ -87,7 +88,7 @@ static void v4l2src_call (GstElement * source, GstMessage *msg, gpointer data)
 {
     GMainLoop *loop = (GMainLoop *) data;
    
-
+    g_print ("CUSTOM MESSAGE CALLBACK WAS CALLED\n");
     switch (GST_MESSAGE_TYPE (msg)) {
 
         case GST_MESSAGE_EOS:
@@ -99,23 +100,19 @@ static void v4l2src_call (GstElement * source, GstMessage *msg, gpointer data)
             gchar  *debug_info = NULL;
             
             gst_message_parse_error (msg, &err, &debug_info);
-            g_printerr ("GST_MESSAGE_ERROR specifically from v4l2src.\n");
+            g_printerr ("GST_MESSAGE_ERROR\n");
             g_printerr ("Error from element:%s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
             g_printerr ("Debug info: %s\n", debug_info ? debug_info : "none");
 
             g_clear_error (&err);
             g_free (debug_info);
             
-            if(quitloop){
-                g_main_loop_quit (loop);
-            }
-            
             break;
         }
         case GST_MESSAGE_WARNING: {
             GError *err = NULL;
             gchar  *debug_info = NULL;
-            g_printerr ("GST_MESSAGE_WARNING specifically from v4l2src.\n");
+            g_printerr ("GST_MESSAGE_WARNING\n");
             gst_message_parse_warning (msg, &err, &debug_info);
             g_print ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
             g_print ("Debugging information: %s\n", debug_info ? debug_info : "none");
@@ -132,7 +129,11 @@ static void v4l2src_call (GstElement * source, GstMessage *msg, gpointer data)
 
 static void fps_measurements_callback (GstElement * fpsdisplaysink, gdouble fps, gdouble droprate, gdouble avgfps, gpointer udata)
 {
-    g_print("Fpsdisplay. FPS: %f,\tDropped: %f,\tAverage %f \n", fps, droprate, avgfps);
+    
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    g_print("Fpsdisplay %02d:%02d:%02d. FPS: %f,\tDropped: %f,\tAverage %f \n", tm.tm_hour, tm.tm_min, tm.tm_sec, fps, droprate, avgfps);
+
 }
 
 
@@ -186,6 +187,8 @@ int stream_main (int argc, char *argv[])
     g_signal_connect (bus, "message", G_CALLBACK (bus_call), loop);
     g_signal_connect (fpssink, "fps-measurements", G_CALLBACK(fps_measurements_callback), NULL);
     g_signal_connect (source, "message", G_CALLBACK(v4l2src_call), loop);
+    g_signal_connect (h264parse, "message", G_CALLBACK(v4l2src_call), loop);
+    g_signal_connect (avdec_h264, "message", G_CALLBACK(v4l2src_call), loop);
 
     
     /* Build the pipeline */

@@ -180,12 +180,13 @@ int stream_main (int argc, char *argv[])
     g_printerr("About to set kvssink parameters!\n");
 
     /* Modify the sink's properties */
-    g_object_set(kvssink, "stream-name", "15e0dc81d12c414aa02b49b990921c8d",
+    g_object_set(kvssink, 
+        "stream-name", "15e0dc81d12c414aa02b49b990921c8d",
         "framerate", 30,
         "restart-on-error", true,
-        "retention-period", 730,
+        "retention-perion", 730,
         "log-config", "/usr/src/app/kvs_log_configuration",
-        "iot-certificate", "iot-certificate,endpoint=\"crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com\",cert-path=\"/usr/src/app/certs/cert.pem\",key-path=\"/usr/src/app/certs/privkey.pem\",ca-path=\"/usr/src/app/certs/root-CA.pem\",role-aliases=\"fbview-kinesis-video-access-role-alias\"",
+        "iot-certificate", "iot-certificate,endpoint=crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com,cert-path=../../certs/cert.pem,key-path=../../certs/privkey.pem,ca-path=../../certs/root-CA.pem,role-aliases=fbview-kinesis-video-access-role-alias",
         NULL);
 
     g_printerr("Finished setting kvssink parameters!\n");

@@ -81,14 +81,8 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
             if (GST_MESSAGE_SRC (msg) == GST_OBJECT (data->pipeline)) {
                 GstState old_state, new_state, pending_state;
                 gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
-                g_print ("\nGST_MESSAGE_STATE_CHANGED: %s state change: %s --> %s:\t\t Pending state: %s\n\n",
-                GST_OBJECT_NAME (msg->src), gst_element_state_get_name (old_state), gst_element_state_get_name (new_state),gst_element_state_get_name (new_state));
-            }
-            else {
-                GstState old_state, new_state, pending_state;
-                gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
-                g_print ("GST_MESSAGE_STATE_CHANGED: %s state change: %s --> %s:\t\t Pending state: %s\n",
-                GST_OBJECT_NAME (msg->src), gst_element_state_get_name (old_state), gst_element_state_get_name (new_state),gst_element_state_get_name (new_state));
+                g_print ("GST_MESSAGE_STATE_CHANGED: Pipeline state change: %s --> %s:\t\t Pending state: %s",
+                gst_element_state_get_name (old_state), gst_element_state_get_name (new_state),gst_element_state_get_name (new_state));
             }
             break;
         case GST_MESSAGE_NEW_CLOCK:

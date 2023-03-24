@@ -46,15 +46,45 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                 if(strstr(debug_info, "No H.264 NAL") != NULL)
                 {
                     g_printerr("And it is THAT error\n");
+
+
+                    GstStateChangeReturn ret;
+                    g_printerr("Attempting to pause pipeline \n");
+                    ret = gst_element_set_state (data->pipeline, GST_STATE_PAUSED);
+                    if (ret == GST_STATE_CHANGE_FAILURE) {
+                        g_printerr ("Unable to set the pipeline to GST_STATE_PAUSED.\n");
+                        g_main_loop_quit (data->loop);
+                        return;
+                    }
+
+                    g_printerr("Attempting to start pipeline flush \n");
+                    gst_element_send_event(GST_ELEMENT (data->pipeline), gst_event_new_flush_start());
+
+                    g_printerr("Attempting to stop pipeline flush \n");
+                    gst_element_send_event(GST_ELEMENT (data->pipeline), gst_event_new_flush_stop(false));
+
+                    g_printerr("Attempting to re-start pipeline \n");
+                    ret = gst_element_set_state (data->pipeline, GST_STATE_PLAYING);
+                    if (ret == GST_STATE_CHANGE_FAILURE) {
+                        g_printerr ("Unable to set the pipeline to GST_STATE_PLAYING.\n");
+                        g_main_loop_quit (data->loop);
+                        return;
+                    }
+
+                }
+                if(quitloop){
+                    g_printerr("but is it NOT that error\n");
+                    g_main_loop_quit (data->loop);
+                }
+            }
+            else{
+                if(quitloop){
+                    g_main_loop_quit (data->loop);
                 }
             }
 
             g_clear_error (&err);
             g_free (debug_info);
-            
-            if(quitloop){
-                g_main_loop_quit (data->loop);
-            }
             
             break;
         }
@@ -78,12 +108,10 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
             // gst_tag_list_unref (tags);
             break;
         case GST_MESSAGE_STATE_CHANGED:
-            if (GST_MESSAGE_SRC (msg) == GST_OBJECT (data->pipeline)) {
-                GstState old_state, new_state, pending_state;
-                gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
-                g_print ("GST_MESSAGE_STATE_CHANGED: Pipeline state change: %s --> %s:\t\t Pending state: %s",
-                gst_element_state_get_name (old_state), gst_element_state_get_name (new_state),gst_element_state_get_name (new_state));
-            }
+            GstState old_state, new_state, pending_state;
+            gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
+            g_print ("GST_MESSAGE_STATE_CHANGED: %s state change: %s --> %s:\t\t Pending state: %s\n",
+            GST_OBJECT_NAME(msg->src), gst_element_state_get_name (old_state), gst_element_state_get_name (new_state),gst_element_state_get_name (new_state));
             break;
         case GST_MESSAGE_NEW_CLOCK:
             g_print("GST_MESSAGE_NEW_CLOCK\n");

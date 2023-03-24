@@ -214,7 +214,7 @@ int stream_main (int argc, char *argv[])
 
     
     /* Build the pipeline */
-    gst_bin_add_many (GST_BIN (data.pipeline), data.source, data.mpph264enc, data.queue, data.h264parse, data.fpssink, NULL); //fakesink removed from here as it should be null
+    gst_bin_add_many (GST_BIN (data.pipeline), data.source, data.mpph264enc, data.queue, data.h264parse, data.avdec_h264, data.fpssink, NULL); //fakesink removed from here as it should be null
 
     // source -> mpph264 -> queue -> 264parse -> fpssink
     GstCaps *caps1;

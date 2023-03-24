@@ -108,9 +108,9 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
             // gst_tag_list_unref (tags);
             break;
         case GST_MESSAGE_STATE_CHANGED:
-            GstState old_state;
-            GstState new_state;
-            GstState pending_state;
+            GstState old_state = NULL;
+            GstState new_state = NULL;
+            GstState pending_state = NULL;
             gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
             g_print ("GST_MESSAGE_STATE_CHANGED: %s state change: %s --> %s:\t\t Pending state: %s\n",
             GST_OBJECT_NAME(msg->src), gst_element_state_get_name (old_state), gst_element_state_get_name (new_state),gst_element_state_get_name (new_state));

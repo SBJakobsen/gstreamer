@@ -175,6 +175,7 @@ int stream_main (int argc, char *argv[])
 
     /* Modify the source's properties */
     g_object_set(source, "device", "/dev/video4", 
+        "do-timestamp", true,
         NULL);
 
     g_printerr("About to set kvssink parameters!\n");
@@ -184,10 +185,31 @@ int stream_main (int argc, char *argv[])
         "stream-name", "15e0dc81d12c414aa02b49b990921c8d",
         "framerate", 30,
         "restart-on-error", true,
-        "retention-perion", 730,
+        "retention-period", 730,
         "log-config", "./../../kvs_log_configuration",
         "iot-certificate", "iot-certificate,endpoint=crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com,cert-path=../../certs/cert.pem,key-path=../../certs/privkey.pem,ca-path=../../certs/root-CA.pem,role-aliases=fbview-kinesis-video-access-role-alias",
         NULL);
+
+    gchar *stream_name;
+    guint framerate;
+    bool restart_on_error;
+    guint retention_period;
+    gchar *log_config;
+    gchar *iot_certificate;
+
+    g_object_get(kvssink,
+        "stream-name", &stream_name,
+        "framerate", &framerate,
+        "restart-on-error", &restart_on_error,
+        "retention-period", &retention_period,
+        "log-config", &log_config,
+        "iot-certificate", &iot_certificate,
+        NULL);
+    
+    g_print("The values are \nstream name: %s\nFramerate: %i \nRetention-period: %i \nLog-config: %s \niot-certificate: %s\n", stream_name, framerate, retention_period, log_config, iot_certificate);
+    
+
+    
 
     g_printerr("Finished setting kvssink parameters!\n");
 

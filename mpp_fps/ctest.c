@@ -13,8 +13,8 @@ typedef struct _CustomData {
   GMainLoop  *loop;
   GstElement *source;
   GstElement *mpph264enc;
+  GstElement *queue;
   GstElement *h264parse;
-  GstElement *avdec_h264;
   GstElement *fpssink;
   GstElement *fakesink;
 } CustomData;
@@ -27,7 +27,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
     switch (GST_MESSAGE_TYPE (msg)) {
 
         case GST_MESSAGE_EOS:
-            g_print ("End of stream\n");
+            g_print ("END OF STREAM RECEIVED\n");
             g_main_loop_quit (data->loop);
         break;
         case GST_MESSAGE_ERROR: {
@@ -49,27 +49,27 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
 
 
                     GstStateChangeReturn ret;
-                    g_print("Attempting to pause pipeline \n");
-                    ret = gst_element_set_state (data->pipeline, GST_STATE_PAUSED);
+                    g_print("Attempting to set pipeline to NULL \n");
+                    ret = gst_element_set_state (data->pipeline, GST_STATE_NULL);
                     if (ret == GST_STATE_CHANGE_FAILURE) {
-                        g_print ("Unable to set the pipeline to GST_STATE_PAUSED.\n");
-                        g_main_loop_quit (data->loop);
+                        g_print ("Unable to set the pipeline to GST_STATE_NULL.\n");
+                        //g_main_loop_quit (data->loop);
                         return;
                     }
 
-                    g_print("Attempting to start pipeline flush \n");
-                    gst_element_send_event(GST_ELEMENT (data->pipeline), gst_event_new_flush_start());
+                    // g_print("Attempting to start pipeline flush \n");
+                    // gst_element_send_event(GST_ELEMENT (data->pipeline), gst_event_new_flush_start());
 
-                    g_print("Attempting to stop pipeline flush \n");
-                    gst_element_send_event(GST_ELEMENT (data->pipeline), gst_event_new_flush_stop(false));
+                    // g_print("Attempting to stop pipeline flush \n");
+                    // gst_element_send_event(GST_ELEMENT (data->pipeline), gst_event_new_flush_stop(false));
 
-                    g_print("Attempting to re-start pipeline \n");
-                    ret = gst_element_set_state (data->pipeline, GST_STATE_PLAYING);
-                    if (ret == GST_STATE_CHANGE_FAILURE) {
-                        g_print ("Unable to set the pipeline to GST_STATE_PLAYING.\n");
-                        g_main_loop_quit (data->loop);
-                        return;
-                    }
+                    // g_print("Attempting to re-start pipeline \n");
+                    // ret = gst_element_set_state (data->pipeline, GST_STATE_PLAYING);
+                    // if (ret == GST_STATE_CHANGE_FAILURE) {
+                    //     g_print ("Unable to set the pipeline to GST_STATE_PLAYING.\n");
+                    //     g_main_loop_quit (data->loop);
+                    //     return;
+                    // }
 
                 }
                 else{
@@ -114,6 +114,17 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                 gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
                 g_print("GST_MESSAGE_STATE_CHANGED: %s state change: %s --> %s:\t\t Pending state: %s\n",
                 GST_OBJECT_NAME(msg->src), gst_element_state_get_name (old_state), gst_element_state_get_name (new_state),gst_element_state_get_name (new_state));
+                if(strcmp(GST_OBJECT_NAME(msg->src), "PIPELINE") == 0 && strcmp(gst_element_state_get_name (new_state), "NULL") = 0)
+                {
+                    g_print("PIPELINE WAS SET TO NULL, ATTEMPTING TO START PLAYING AGAIN");
+                    GstStateChangeReturn ret;
+                    ret = gst_element_set_state (data->pipeline, GST_STATE_PLAYING);
+                    if (ret == GST_STATE_CHANGE_FAILURE) {
+                        g_print ("Unable to set the pipeline to GST_STATE_PLAYING.\n");
+                        //g_main_loop_quit (data->loop);
+                        return;
+                    }
+                }
             }
             break;
         case GST_MESSAGE_NEW_CLOCK:
@@ -181,14 +192,14 @@ int stream_main (int argc, char *argv[])
     data.source      =   gst_element_factory_make("v4l2src",         "source");
     data.mpph264enc  =   gst_element_factory_make("mpph264enc",      "mpph264enc");
     data.h264parse   =   gst_element_factory_make("h264parse",       "h264parse");
-    data.avdec_h264  =   gst_element_factory_make("avdec_h264",      "avdec_h264");
+    //data.avdec_h264  =   gst_element_factory_make("avdec_h264",      "avdec_h264");
     data.fpssink     =   gst_element_factory_make("fpsdisplaysink",  "fpssink");
     data.fakesink    =   gst_element_factory_make("fakesink",        "fakesink");
 
     /* Create the empty pipeline */
     data.pipeline = gst_pipeline_new ("PIPELINE");
 
-    if (!data.pipeline || !data.source || !data.mpph264enc || !data.h264parse || !data.avdec_h264 || !data.fakesink) {
+    if (!data.pipeline || !data.source || !data.mpph264enc || !data.queue || !data.h264parse || !data.fakesink) {
         g_print ("Not all elements could be created.\n");
         return -1;
     }
@@ -201,9 +212,9 @@ int stream_main (int argc, char *argv[])
 
     
     /* Build the pipeline */
-    gst_bin_add_many (GST_BIN (data.pipeline), data.source, data.mpph264enc, data.h264parse, data.avdec_h264, data.fpssink, NULL); //fakesink removed from here as it should be null
+    gst_bin_add_many (GST_BIN (data.pipeline), data.source, data.mpph264enc, data.queue, data.h264parse,, data.fpssink, NULL); //fakesink removed from here as it should be null
 
-    // source -> mpph264 -> 264parse > avdec_264 -> fpssink
+    // source -> mpph264 -> queue -> 264parse -> fpssink
     GstCaps *caps1;
     caps1 = gst_caps_from_string("video/x-raw,width=640,height=480, framerate=30/1");
     if (gst_element_link_filtered(data.source, data.mpph264enc, caps1) != TRUE) {
@@ -212,25 +223,26 @@ int stream_main (int argc, char *argv[])
         return -1;
     }
 
-    if (gst_element_link (data.mpph264enc, data.h264parse) != TRUE) {
-        g_print ("Mpph264enc and h264parsecould not be linked.\n");
+    if (gst_element_link (data.mpph264enc, data.queue) != TRUE) {
+        g_print ("Mpph264enc and queue could not be linked.\n");
+        gst_object_unref (data.pipeline);
+        return -1;
+    }
+
+    if (gst_element_link (data.queue, data.h264parse) != TRUE) {
+        g_print ("queue and h264parse could not be linked.\n");
         gst_object_unref (data.pipeline);
         return -1;
     }
 
     GstCaps *caps2;  
     caps2 = gst_caps_from_string("video/x-h264,stream-format=avc,alignment=au");
-    if (gst_element_link_filtered(data.h264parse, data.avdec_h264, caps2) != TRUE) {
+    if (gst_element_link_filtered(data.h264parse, data.fpssink, caps2) != TRUE) {
         g_print ("h264parse and avdec_h264 could not be linked");
         gst_object_unref (data.pipeline);
         return -1;
     }
 
-    if (gst_element_link (data.avdec_h264, data.fpssink) != TRUE) {
-        g_print ("avdec_h264 and fpssink could not be linked.\n");
-        gst_object_unref (data.pipeline);
-        return -1;
-    }
 
 
 

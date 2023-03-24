@@ -72,7 +72,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                     }
 
                 }
-                else(quitloop){
+                else{
                     g_printerr("but is it NOT that error. Quitting\n");
                     g_main_loop_quit (data->loop);
                 }

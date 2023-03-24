@@ -30,7 +30,14 @@ static void bus_call (GstBus *bus, GstMessage *msg, gpointer data)
             g_printerr ("Debug info: %s\n", debug_info ? debug_info : "none");
 
             // Stringcompare GST_OBJECT_NAME == "h264parse" -> reset pipeline
-            //if(strcmp(GST_OBJECT_NAME(msg->src))
+            if(strcmp(GST_OBJECT_NAME(msg->src), "h264parse") == 0)
+            {
+                g_print("Error is from the h264parse element\n");
+                if(strstr(debug_info, "No H.264 NAL") != NULL)
+                {
+                    g_printerr("And it is THAT error\n");
+                }
+            }
 
             g_clear_error (&err);
             g_free (debug_info);
@@ -184,6 +191,7 @@ int stream_main (int argc, char *argv[])
 
     /* Modify the source's properties */
     g_object_set(source, "device", "/dev/video4", 
+        "do-timestamp", true,
         NULL);
 
     /* Modify the sink's properties */

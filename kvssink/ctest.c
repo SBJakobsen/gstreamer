@@ -187,8 +187,8 @@ int stream_main (int argc, char *argv[])
         "restart-on-error", true,
         "retention-period", 730,
         "log-config", "./usr/src/app/kvs_log_configuration",
+        "iot-certificate", "iot-certificate,endpoint=crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com,cert-path=/usr/src/app/certs/cert.pem,key-path=/usr/src/app/certs/privkey.pem,ca-path=/usr/src/app/certs/root-CA.pem,role-aliases=fbview-kinesis-video-access-role-alias",
         NULL);
-        //"iot-certificate", "\"iot-certificate,endpoint=crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com\",cert-path=\"../../certs/cert.pem\",key-path=\"../../certs/privkey.pem\",ca-path=\"../../certs/root-CA.pem\",ro\"le-aliases=\"fbview-kinesis-video-access-role-alias\"",
         
 
     gchar *stream_name;
@@ -204,10 +204,10 @@ int stream_main (int argc, char *argv[])
         "restart-on-error", &restart_on_error,
         "retention-period", &retention_period,
         "log-config", &log_config,
+        "iot-certificate", &iot_certificate,
         NULL);
-        //"iot-certificate", &iot_certificate,
     
-    g_print("The values are \nstream name: %s\nFramerate: %i \nRetention-period: %i \nLog-config: %s \niot-certificate: %s\n", stream_name, framerate, retention_period, log_config, iot_certificate);
+    g_print("\nThe values are \nstream name: %s\nFramerate: %i \nRetention-period: %i \nLog-config: %s \niot-certificate: %s\n\n", stream_name, framerate, retention_period, log_config, iot_certificate);
 
 
     

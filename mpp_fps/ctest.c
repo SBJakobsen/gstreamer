@@ -8,17 +8,27 @@
 
 bool quitloop = true;
 
+typedef struct _CustomData {
+  GstElement *pipeline;
+  GMainLoop  *loop;
+  GstElement *source;
+  GstElement *mpph264enc;
+  GstElement *h264parse;
+  GstElement *avdec_h264;
+  GstElement *fpssink;
+  GstElement *fakesink;
+} CustomData;
 
-static void bus_call (GstBus *bus, GstMessage *msg, gpointer data)
+static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
 {
-    GMainLoop *loop = (GMainLoop *) data;
+    
    
 
     switch (GST_MESSAGE_TYPE (msg)) {
 
         case GST_MESSAGE_EOS:
             g_print ("End of stream\n");
-            g_main_loop_quit (loop);
+            g_main_loop_quit (data->loop);
         break;
         case GST_MESSAGE_ERROR: {
             GError *err = NULL;
@@ -43,7 +53,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, gpointer data)
             g_free (debug_info);
             
             if(quitloop){
-                g_main_loop_quit (loop);
+                g_main_loop_quit (data->loop);
             }
             
             break;
@@ -68,7 +78,15 @@ static void bus_call (GstBus *bus, GstMessage *msg, gpointer data)
             // gst_tag_list_unref (tags);
             break;
         case GST_MESSAGE_STATE_CHANGED:
+            if (GST_MESSAGE_SRC (msg) == GST_OBJECT (data->pipeline)) {
+                GstState old_state, new_state, pending_state;
+                gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
+                g_print ("GST_MESSAGE_STATE_CHANGED: Pipeline state change: %s --> %s:\n",
+                gst_element_state_get_name (old_state), gst_element_state_get_name (new_state));
+            }
+            else {
             g_print("GST_MESSAGE_STATE_CHANGED\n");
+            }
             break;
         case GST_MESSAGE_NEW_CLOCK:
             g_print("GST_MESSAGE_NEW_CLOCK\n");
@@ -107,16 +125,15 @@ static void fps_measurements_callback (GstElement * fpsdisplaysink, gdouble fps,
 
 int stream_main (int argc, char *argv[])
 {
-    GMainLoop *loop;
 
-    GstElement *pipeline, *source, *mpph264enc, *h264parse, *avdec_h264, *fpssink, *fakesink;
+    CustomData data;
     GstBus *bus;
     guint bus_watch_id;
 
     GstMessage *msg;
     GstStateChangeReturn ret;
 
-    loop = g_main_loop_new (NULL, FALSE);
+    data.loop = g_main_loop_new (NULL, FALSE);
 
     gchar *fps_msg;
     int delay_show_FPS = 0;
@@ -133,89 +150,92 @@ int stream_main (int argc, char *argv[])
     }
 
     /* Create the elements */
-    source      =   gst_element_factory_make("v4l2src",         "source");
-    mpph264enc  =   gst_element_factory_make("mpph264enc",      "mpph264enc");
-    h264parse   =   gst_element_factory_make("h264parse",       "h264parse");
-    avdec_h264  =   gst_element_factory_make("avdec_h264",      "avdec_h264");
-    fpssink     =   gst_element_factory_make("fpsdisplaysink",  "fpssink");
-    fakesink    =   gst_element_factory_make("fakesink",        "fakesink");
+    data.source      =   gst_element_factory_make("v4l2src",         "source");
+    data.mpph264enc  =   gst_element_factory_make("mpph264enc",      "mpph264enc");
+    data.h264parse   =   gst_element_factory_make("h264parse",       "h264parse");
+    data.avdec_h264  =   gst_element_factory_make("avdec_h264",      "avdec_h264");
+    data.fpssink     =   gst_element_factory_make("fpsdisplaysink",  "fpssink");
+    data.fakesink    =   gst_element_factory_make("fakesink",        "fakesink");
 
     /* Create the empty pipeline */
-    pipeline = gst_pipeline_new ("test-pipeline");
+    data.pipeline = gst_pipeline_new ("test-pipeline");
 
-    if (!pipeline || !source || !mpph264enc || !h264parse || !avdec_h264 || !fakesink) {
+    if (!data.pipeline || !data.source || !data.mpph264enc || !data.h264parse || !data.avdec_h264 || !data.fakesink) {
         g_printerr ("Not all elements could be created.\n");
         return -1;
     }
 
     /* Add a message handler */
-    bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline));
+    bus = gst_pipeline_get_bus (GST_PIPELINE (data.pipeline));
     gst_bus_add_signal_watch (bus);
-    g_signal_connect (bus, "message", G_CALLBACK (bus_call), loop);
-    g_signal_connect (fpssink, "fps-measurements", G_CALLBACK(fps_measurements_callback), NULL);
+    g_signal_connect (bus, "message", G_CALLBACK (bus_call), &data);
+    g_signal_connect (data.fpssink, "fps-measurements", G_CALLBACK(fps_measurements_callback), NULL);
 
     
     /* Build the pipeline */
-    gst_bin_add_many (GST_BIN (pipeline), source, mpph264enc, h264parse, avdec_h264, fpssink, NULL); //fakesink removed from here as it should be null
+    gst_bin_add_many (GST_BIN (data.pipeline), data.source, data.mpph264enc, data.h264parse, data.avdec_h264, data.fpssink, NULL); //fakesink removed from here as it should be null
 
     // source -> mpph264 -> 264parse > avdec_264 -> fpssink
     GstCaps *caps1;
     caps1 = gst_caps_from_string("video/x-raw,width=640,height=480, framerate=30/1");
-    if (gst_element_link_filtered(source, mpph264enc, caps1) != TRUE) {
+    if (gst_element_link_filtered(data.source, data.mpph264enc, caps1) != TRUE) {
         g_printerr ("Source and mpph264enc could not be linked\n");
-        gst_object_unref (pipeline);
+        gst_object_unref (data.pipeline);
         return -1;
     }
 
-    if (gst_element_link (mpph264enc, h264parse) != TRUE) {
+    if (gst_element_link (data.mpph264enc, data.h264parse) != TRUE) {
         g_printerr ("Mpph264enc and h264parsecould not be linked.\n");
-        gst_object_unref (pipeline);
+        gst_object_unref (data.pipeline);
         return -1;
     }
 
     GstCaps *caps2;  
     caps2 = gst_caps_from_string("video/x-h264,stream-format=avc,alignment=au");
-    if (gst_element_link_filtered(h264parse, avdec_h264, caps2) != TRUE) {
+    if (gst_element_link_filtered(data.h264parse, data.avdec_h264, caps2) != TRUE) {
         g_printerr ("h264parse and avdec_h264 could not be linked");
-        gst_object_unref (pipeline);
+        gst_object_unref (data.pipeline);
         return -1;
     }
 
-    if (gst_element_link (avdec_h264, fpssink) != TRUE) {
+    if (gst_element_link (data.avdec_h264, data.fpssink) != TRUE) {
         g_printerr ("avdec_h264 and fpssink could not be linked.\n");
-        gst_object_unref (pipeline);
+        gst_object_unref (data.pipeline);
         return -1;
     }
 
 
 
     /* Modify the source's properties */
-    g_object_set(source, "device", "/dev/video4", 
+    g_object_set(data.source, "device", "/dev/video4", 
         "do-timestamp", true,
         NULL);
 
     /* Modify the sink's properties */
-    g_object_set(fpssink, "text-overlay", false, "video-sink", fakesink, "signal-fps-measurements", true, NULL);
-    g_object_set(fakesink, "sync", TRUE,
+    g_object_set(data.fpssink, "text-overlay", false, "video-sink", data.fakesink, "signal-fps-measurements", true, NULL);
+    g_object_set(data.fakesink, "sync", TRUE,
         "silent", false, NULL);
 
     /* Start playing */
-    ret = gst_element_set_state (pipeline, GST_STATE_PLAYING);
+    ret = gst_element_set_state (data.pipeline, GST_STATE_PLAYING);
     if (ret == GST_STATE_CHANGE_FAILURE) {
         g_printerr ("Unable to set the pipeline to the playing state.\n");
-        gst_object_unref (pipeline);
+        gst_object_unref (data.pipeline);
         return -1;
     }
 
     /* Iterate */
     g_print ("Running...\n");
-    g_main_loop_run (loop);
+    g_main_loop_run (data.loop);
     
     g_print ("Program finished.\n");
     /* Free resources */
     gst_object_unref (bus);
-    gst_element_set_state (pipeline, GST_STATE_NULL);
-    gst_object_unref (pipeline);
+    gst_element_set_state (data.pipeline, GST_STATE_NULL);
+    if (ret == GST_STATE_CHANGE_FAILURE) {
+        g_printerr ("On exit, unable to change pipeline state: PLAYING->NULL.\n");
+    }
+    gst_object_unref (data.pipeline);
     return 0;
 }
 

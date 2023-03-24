@@ -189,12 +189,13 @@ int stream_main (int argc, char *argv[])
     }
 
     /* Create the elements */
-    data.source      =   gst_element_factory_make("v4l2src",         "source");
-    data.mpph264enc  =   gst_element_factory_make("mpph264enc",      "mpph264enc");
-    data.h264parse   =   gst_element_factory_make("h264parse",       "h264parse");
+    data.source     =   gst_element_factory_make("v4l2src",         "source");
+    data.mpph264enc =   gst_element_factory_make("mpph264enc",      "mpph264enc");
+    data.h264parse  =   gst_element_factory_make("h264parse",       "h264parse");
     //data.avdec_h264  =   gst_element_factory_make("avdec_h264",      "avdec_h264");
-    data.fpssink     =   gst_element_factory_make("fpsdisplaysink",  "fpssink");
-    data.fakesink    =   gst_element_factory_make("fakesink",        "fakesink");
+    data.queue      =   gst_element_factory_make("queue",           "queue");
+    data.fpssink    =   gst_element_factory_make("fpsdisplaysink",  "fpssink");
+    data.fakesink   =   gst_element_factory_make("fakesink",        "fakesink");
 
     /* Create the empty pipeline */
     data.pipeline = gst_pipeline_new ("PIPELINE");
@@ -238,7 +239,7 @@ int stream_main (int argc, char *argv[])
     GstCaps *caps2;  
     caps2 = gst_caps_from_string("video/x-h264,stream-format=avc,alignment=au");
     if (gst_element_link_filtered(data.h264parse, data.fpssink, caps2) != TRUE) {
-        g_print ("h264parse and avdec_h264 could not be linked");
+        g_print ("h264parse and fpssink could not be linked");
         gst_object_unref (data.pipeline);
         return -1;
     }

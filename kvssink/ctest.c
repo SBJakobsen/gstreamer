@@ -187,7 +187,7 @@ int stream_main (int argc, char *argv[])
         "restart-on-error", true,
         "retention-period", 730,
         "log-config", "./usr/src/app/kvs_log_configuration",
-        "iot-certificate", "iot-certificate,endpoint=\"tesdt\",cert-path=\"/certs/cert.pem\",key-path=\"/certs/privkey.pem\",ca-path=\"/certs/root-CA.pem\",role-aliases=\"alias\"",
+        "iot-certificate", "test",
         NULL);
         
 

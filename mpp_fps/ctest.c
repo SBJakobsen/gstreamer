@@ -72,8 +72,8 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                     }
 
                 }
-                if(quitloop){
-                    g_printerr("but is it NOT that error\n");
+                else(quitloop){
+                    g_printerr("but is it NOT that error. Quitting\n");
                     g_main_loop_quit (data->loop);
                 }
             }

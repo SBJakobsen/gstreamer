@@ -25,9 +25,9 @@ static void bus_call (GstBus *bus, GstMessage *msg, gpointer data)
             gchar  *debug_info = NULL;
             
             gst_message_parse_error (msg, &err, &debug_info);
-            g_printerr ("GST_MESSAGE_ERROR.\n");
-            g_printerr ("Error from element:%s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
-            g_printerr ("Debug info: %s\n", debug_info ? debug_info : "none");
+            g_print ("GST_MESSAGE_ERROR.\n");
+            g_print ("Error from element:%s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
+            g_print ("Debug info: %s\n", debug_info ? debug_info : "none");
 
             // Stringcompare GST_OBJECT_NAME == "h264parse" -> reset pipeline
             //if(strcmp(GST_OBJECT_NAME(msg->src))
@@ -44,7 +44,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, gpointer data)
         case GST_MESSAGE_WARNING: {
             GError *err = NULL;
             gchar  *debug_info = NULL;
-            g_printerr ("GST_MESSAGE_WARNING.\n");
+            g_print ("GST_MESSAGE_WARNING.\n");
             gst_message_parse_warning (msg, &err, &debug_info);
             g_print ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
             g_print ("Debugging information: %s\n", debug_info ? debug_info : "none");
@@ -82,7 +82,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, gpointer data)
             g_print("GST_MESSAGE_STREAM_START\n");
             break;
         default:
-            g_printerr("GST_MESSAGE_TYPE enum: %d\n", GST_MESSAGE_TYPE (msg));
+            g_print("GST_MESSAGE_TYPE enum: %d\n", GST_MESSAGE_TYPE (msg));
         break;
     }
 }
@@ -135,7 +135,7 @@ int stream_main (int argc, char *argv[])
     pipeline = gst_pipeline_new ("test-pipeline");
 
     if (!pipeline || !source || !mpph264enc || !h264parse || !kvssink) {
-        g_printerr ("Not all elements could be created.\n");
+        g_print ("Not all elements could be created.\n");
         return -1;
     }
 
@@ -152,13 +152,13 @@ int stream_main (int argc, char *argv[])
     GstCaps *caps1;
     caps1 = gst_caps_from_string("video/x-raw,width=640,height=480,framerate=30/1");
     if (gst_element_link_filtered(source, mpph264enc, caps1) != TRUE) {
-        g_printerr ("Source and mpph264enc could not be linked\n");
+        g_print ("Source and mpph264enc could not be linked\n");
         gst_object_unref (pipeline);
         return -1;
     }
 
     if (gst_element_link (mpph264enc, h264parse) != TRUE) {
-        g_printerr ("Mpph264enc and h264parsecould not be linked.\n");
+        g_print ("Mpph264enc and h264parsecould not be linked.\n");
         gst_object_unref (pipeline);
         return -1;
     }
@@ -166,7 +166,7 @@ int stream_main (int argc, char *argv[])
     GstCaps *caps2;  
     caps2 = gst_caps_from_string("video/x-h264,stream-format=avc,alignment=au");
     if (gst_element_link_filtered(h264parse, kvssink, caps2) != TRUE) {
-        g_printerr ("h264parse and avdec_h264 could not be linked");
+        g_print ("h264parse and avdec_h264 could not be linked");
         gst_object_unref (pipeline);
         return -1;
     }
@@ -178,7 +178,7 @@ int stream_main (int argc, char *argv[])
         "do-timestamp", true,
         NULL);
 
-    g_printerr("About to set kvssink parameters!\n");
+    g_print("About to set kvssink parameters!\n");
 
     /* Modify the sink's properties */
     g_object_set(kvssink, 
@@ -212,12 +212,12 @@ int stream_main (int argc, char *argv[])
 
     
 
-    g_printerr("Finished setting kvssink parameters!\n");
+    g_print("Finished setting kvssink parameters!\n");
 
     /* Start playing */
     ret = gst_element_set_state (pipeline, GST_STATE_PLAYING);
     if (ret == GST_STATE_CHANGE_FAILURE) {
-        g_printerr ("Unable to set the pipeline to the playing state.\n");
+        g_print ("Unable to set the pipeline to the playing state.\n");
         gst_object_unref (pipeline);
         return -1;
     }

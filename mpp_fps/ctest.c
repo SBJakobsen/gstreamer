@@ -186,7 +186,7 @@ int stream_main (int argc, char *argv[])
     data.fakesink    =   gst_element_factory_make("fakesink",        "fakesink");
 
     /* Create the empty pipeline */
-    data.pipeline = gst_pipeline_new ("test-pipeline");
+    data.pipeline = gst_pipeline_new ("PIPELINE");
 
     if (!data.pipeline || !data.source || !data.mpph264enc || !data.h264parse || !data.avdec_h264 || !data.fakesink) {
         g_printerr ("Not all elements could be created.\n");

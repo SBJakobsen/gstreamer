@@ -201,7 +201,7 @@ int stream_main (int argc, char *argv[])
     /* Create the empty pipeline */
     data.pipeline = gst_pipeline_new ("PIPELINE");
 
-    if (!data.pipeline || !data.source || !data.mpph264enc || !data.queue || !data.h264parse || data.avdec_h264|| !data.fakesink) {
+    if (!data.pipeline || !data.source || !data.mpph264enc || !data.queue || !data.h264parse || !data.avdec_h264|| !data.fakesink) {
         g_print ("Not all elements could be created.\n");
         return -1;
     }

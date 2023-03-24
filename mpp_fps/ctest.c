@@ -114,7 +114,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                 gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
                 g_print("GST_MESSAGE_STATE_CHANGED: %s state change: %s --> %s:\t\t Pending state: %s\n",
                 GST_OBJECT_NAME(msg->src), gst_element_state_get_name (old_state), gst_element_state_get_name (new_state),gst_element_state_get_name (new_state));
-                if(strcmp(GST_OBJECT_NAME(msg->src), "PIPELINE") == 0 && strcmp(gst_element_state_get_name (new_state), "NULL") = 0)
+                if(strcmp(GST_OBJECT_NAME(msg->src), "PIPELINE") == 0 && strcmp(gst_element_state_get_name (new_state), "NULL") == 0)
                 {
                     g_print("PIPELINE WAS SET TO NULL, ATTEMPTING TO START PLAYING AGAIN");
                     GstStateChangeReturn ret;
@@ -212,7 +212,7 @@ int stream_main (int argc, char *argv[])
 
     
     /* Build the pipeline */
-    gst_bin_add_many (GST_BIN (data.pipeline), data.source, data.mpph264enc, data.queue, data.h264parse,, data.fpssink, NULL); //fakesink removed from here as it should be null
+    gst_bin_add_many (GST_BIN (data.pipeline), data.source, data.mpph264enc, data.queue, data.h264parse, data.fpssink, NULL); //fakesink removed from here as it should be null
 
     // source -> mpph264 -> queue -> 264parse -> fpssink
     GstCaps *caps1;

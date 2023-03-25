@@ -55,7 +55,14 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                     if (ret == GST_STATE_CHANGE_FAILURE) {
                         g_print ("Unable to set the pipeline to GST_STATE_NULL.\n");
                         //g_main_loop_quit (data->loop);
-                        return;
+                        //return;
+                    }
+
+                    g_print("And then attempting setting it back to PLAYING \n");
+                    ret = gst_element_set_state (data->pipeline, GST_STATE_PLAYING);
+                    if (ret == GST_STATE_CHANGE_FAILURE) {
+                        g_print ("Unable to set the pipeline to GST_STATE_PLAYING.\n");
+                        //g_main_loop_quit (data->loop);
                     }
 
                     // g_print("Attempting to start pipeline flush \n");

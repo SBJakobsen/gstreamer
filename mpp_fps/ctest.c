@@ -6,7 +6,10 @@
 
 #define DELAY_VALUE 7500
 
-bool quitloop = true;
+
+time_t t;
+struct tm tm;
+
 
 typedef struct _CustomData {
   GstElement *pipeline;
@@ -57,6 +60,10 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                         //g_main_loop_quit (data->loop);
                         //return;
                     }
+                    
+                    g_print ("Unreffing pipeline as part of memory leak test\n");
+                    gst_object_unref (data->pipeline);   
+                    
 
                     g_print("And then attempting setting it back to PLAYING \n");
                     ret = gst_element_set_state (data->pipeline, GST_STATE_PLAYING);
@@ -64,6 +71,8 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                         g_print ("Unable to set the pipeline to GST_STATE_PLAYING.\n");
                         //g_main_loop_quit (data->loop);
                     }
+
+                    
 
                     // g_print("Attempting to start pipeline flush \n");
                     // gst_element_send_event(GST_ELEMENT (data->pipeline), gst_event_new_flush_start());
@@ -81,14 +90,14 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
 
                 }
                 else{
-                    g_print("but is it NOT that error. Quitting\n");
+                    g_print("but is it NOT the known error. Quitting\n");
                     g_main_loop_quit (data->loop);
                 }
             }
             else{
-                if(quitloop){
-                    g_main_loop_quit (data->loop);
-                }
+                
+                g_main_loop_quit (data->loop);
+                
             }
 
             g_clear_error (&err);
@@ -121,18 +130,19 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                 GstState pending_state;
                 gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
                 g_print("GST_MESSAGE_STATE_CHANGED: %s state change: %s --> %s:\t\t Pending state: %s\n",
-                GST_OBJECT_NAME(msg->src), gst_element_state_get_name (old_state), gst_element_state_get_name (new_state),gst_element_state_get_name (new_state));
-                if(strcmp(GST_OBJECT_NAME(msg->src), "PIPELINE") == 0 && strcmp(gst_element_state_get_name (new_state), "NULL") == 0)
-                {
-                    g_print("PIPELINE WAS SET TO NULL, ATTEMPTING TO START PLAYING AGAIN");
-                    GstStateChangeReturn ret;
-                    ret = gst_element_set_state (data->pipeline, GST_STATE_PLAYING);
-                    if (ret == GST_STATE_CHANGE_FAILURE) {
-                        g_print ("Unable to set the pipeline to GST_STATE_PLAYING.\n");
-                        //g_main_loop_quit (data->loop);
-                        return;
-                    }
-                }
+                    GST_OBJECT_NAME(msg->src), gst_element_state_get_name (old_state), gst_element_state_get_name (new_state),gst_element_state_get_name (new_state));
+                // if(strcmp(GST_OBJECT_NAME(msg->src), "PIPELINE") == 0 && strcmp(gst_element_state_get_name (new_state), "NULL") == 0)
+                // {
+                //     g_print("PIPELINE WAS SET TO NULL, ATTEMPTING TO START PLAYING AGAIN");
+                //     GstStateChangeReturn ret;
+                //     ret = gst_element_set_state (data->pipeline, GST_STATE_PLAYING);
+                //     if (ret == GST_STATE_CHANGE_FAILURE) {
+                //         g_print ("Unable to set the pipeline to GST_STATE_PLAYING.\n");
+                //         //g_main_loop_quit (data->loop);
+                //     }
+                //     g_free(GstStateChangeReturn);
+                // }
+                
             }
             break;
         case GST_MESSAGE_NEW_CLOCK:
@@ -162,8 +172,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
 static void fps_measurements_callback (GstElement * fpsdisplaysink, gdouble fps, gdouble droprate, gdouble avgfps, gpointer udata)
 {
     
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
+    
     g_print("Fpsdisplay %02d:%02d:%02d. FPS: %f,\tDropped: %f,\tAverage %f \n", tm.tm_hour, tm.tm_min, tm.tm_sec, fps, droprate, avgfps);
 
 }
@@ -179,6 +188,9 @@ int stream_main (int argc, char *argv[])
 
     GstMessage *msg;
     GstStateChangeReturn ret;
+    
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
 
     data.loop = g_main_loop_new (NULL, FALSE);
 
@@ -188,13 +200,6 @@ int stream_main (int argc, char *argv[])
     /* Initialize GStreamer */
     gst_init (&argc, &argv);
 
-    if(argc > 1){
-        g_print("argc > 1, disabling quitloop\n");
-        quitloop = false;
-    }
-    else {
-        g_print("argc = 1, quitloop is enabled\n");
-    }
 
     /* Create the elements */
     data.source     =   gst_element_factory_make("v4l2src",         "source");

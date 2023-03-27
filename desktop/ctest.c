@@ -18,6 +18,25 @@ typedef struct _CustomData {
   GstElement *kvssink;
 } CustomData;
 
+typedef struct _EnvVariables {
+
+} EnvVariables
+
+
+
+/*
+WIDTH
+HEIGHT
+FRAMERATE
+RESIN_DEVICE_UUID
+AWS_ENDPOINT
+CERTSDIR
+ROLE_ALIAS
+AWS_REGION
+*/
+
+boolean get_env_variables ()
+
 static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
 {
     
@@ -280,6 +299,9 @@ int stream_main (int argc, char *argv[])
     // g_print("\nThe values are \nstream name: %s\nFramerate: %i \nRetention-period: %i \nLog-config: %s \niot-certificate: %s\n\n", stream_name, framerate, retention_period, log_config, iot_certificate);
 
     g_print("Finished setting kvssink parameters!\n");
+
+    g_print("Test program over. Quitting\n");
+    return 0;
 
     /* Start playing */
     ret = gst_element_set_state (data.pipeline, GST_STATE_PLAYING);

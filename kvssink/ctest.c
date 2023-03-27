@@ -16,6 +16,7 @@ typedef struct _CustomData {
 } CustomData;
 
 
+
 static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
 {
     
@@ -139,6 +140,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
             g_print("GST_MESSAGE_TYPE enum: %d\n", GST_MESSAGE_TYPE (msg));
         break;
     }
+    g_free(msg);
 }
 
 

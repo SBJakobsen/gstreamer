@@ -172,7 +172,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
 static void fps_measurements_callback (GstElement * fpsdisplaysink, gdouble fps, gdouble droprate, gdouble avgfps, gpointer udata)
 {
     
-    
+    tm = *localtime(&t);
     g_print("Fpsdisplay %02d:%02d:%02d. FPS: %f,\tDropped: %f,\tAverage %f \n", tm.tm_hour, tm.tm_min, tm.tm_sec, fps, droprate, avgfps);
 
 }

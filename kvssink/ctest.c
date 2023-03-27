@@ -180,7 +180,7 @@ int stream_main (int argc, char *argv[])
     /* Add a message handler */
     bus = gst_pipeline_get_bus (GST_PIPELINE (data.pipeline));
     gst_bus_add_signal_watch (bus);
-    g_signal_connect (G_OBJECT(bus), "message::error", G_CALLBACK (bus_call), &data);
+    g_signal_connect (G_OBJECT(bus), "message", G_CALLBACK (bus_call), &data);
     gst_object_unref(bus);
 
     
@@ -235,6 +235,9 @@ int stream_main (int argc, char *argv[])
         "log-config", "/usr/src/app/kvs_log_configuration",
         "iot-certificate", iot_certificate,
         NULL);
+
+    g_print("Kvssink parameters set!\n");
+
 
     /* Start playing */
     ret = gst_element_set_state (data.pipeline, GST_STATE_PLAYING);

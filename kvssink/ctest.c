@@ -140,7 +140,6 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
             g_print("GST_MESSAGE_TYPE enum: %d\n", GST_MESSAGE_TYPE (msg));
         break;
     }
-    g_free(msg);
 }
 
 
@@ -181,7 +180,7 @@ int stream_main (int argc, char *argv[])
     /* Add a message handler */
     bus = gst_pipeline_get_bus (GST_PIPELINE (data.pipeline));
     gst_bus_add_signal_watch (bus);
-    g_signal_connect (bus, "message", G_CALLBACK (bus_call), &data);
+    g_signal_connect (G_OBJECT(bus), "message::error", G_CALLBACK (bus_call), &data);
     gst_object_unref(bus);
 
     

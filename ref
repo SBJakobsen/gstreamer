@@ -9,7 +9,15 @@
             ! video/x-h264,stream-format=avc,alignment=au \
             ! kvssink stream-name="$RESIN_DEVICE_UUID" framerate=$FRAMERATE restart-on-error=true retention-period=730 log-config="/usr/src/app/kvs_log_configuration" iot-certificate="iot-certificate,endpoint=$AWS_ENDPOINT,cert-path=$CERTSDIR/cert.pem,key-path=$CERTSDIR/privkey.pem,ca-path=$CERTSDIR/root-CA.pem,role-aliases=$ROLE_ALIAS"
             
-
+      # Live
+     
+      gst-launch-1.0 -vvv v4l2src do-timestamp=TRUE device=/dev/video4 \
+            ! video/x-raw,width=640,height=480,framerate=30/1 \
+            ! x264enc \
+            ! h264parse \
+            ! video/x-h264,stream-format=avc,alignment=au \
+            ! kvssink stream-name="15e0dc81d12c414aa02b49b990921c8d" framerate=30 restart-on-error=true retention-period=730 log-config="/usr/src/app/kvs_log_configuration" iot-certificate="iot-certificate,endpoint=crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com,cert-path=/home/soren/projects/gstreamer/desktop/certs/cert.pem,key-path=/home/soren/projects/gstreamer/desktop/certs/privkey.pem,ca-path=/home/soren/projects/gstreamer/desktop/certs/root-CA.pem,role-aliases=fbview-kinesis-video-access-role-alias"
+      
             
 
 

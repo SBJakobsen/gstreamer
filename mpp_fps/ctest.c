@@ -139,7 +139,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                 //         g_print ("Unable to set the pipeline to GST_STATE_PLAYING.\n");
                 //         //g_main_loop_quit (data->loop);
                 //     }
-                //     g_free(GstStateChangeReturn);
+                //     
                 // }
                 
             }

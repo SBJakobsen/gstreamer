@@ -237,18 +237,20 @@ int stream_main (int argc, char *argv[])
         "do-timestamp", true,
         NULL);
 
+    GstStructure *iot_certificate = gst_structure_new_from_string ("iot-certificate,endpoint=crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com,cert-path=/home/soren/projects/gstreamer/desktop/certs/cert.pem,key-path=/home/soren/projects/gstreamer/desktop/certs/privkey.pem,ca-path=/home/soren/projects/gstreamer/desktop/certs/root-CA.pem,role-aliases=fbview-kinesis-video-access-role-alias");
+
+
     g_print("About to set kvssink parameters!\n");
-    char iot_certificate[] = "iot-certificate,endpoint=\"crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com\",cert-path=\"certs/cert.pem\",key-path=\"certs/privkey.pem\",ca-path=\"certs/root-CA.pem\",role-aliases=\"fbview-kinesis-video-access-role-alias\"";
-    g_print("The size is %li\n", sizeof(iot_certificate));
     /* Modify the sink's properties */
     g_object_set(data.kvssink, 
         "stream-name", "15e0dc81d12c414aa02b49b990921c8d",
+        "framerate", (guint)30,
+        "restart-on-error", true,
+        "retention-period", 730,
+        "aws-region", "eu-west-1",
+        "log-config", "./kvs_log_configuration",
         "iot-certificate", iot_certificate,
         NULL);
-        //"framerate", 30,
-        //"restart-on-error", true,
-        //"retention-period", 730,
-        //"log-config", "./kvs_log_configuration",
         
         
     // g_object_set(data.kvssink,

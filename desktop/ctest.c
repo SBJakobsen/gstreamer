@@ -69,13 +69,13 @@ gboolean get_env_variables ( EnvVariables *vars){
         return false;
     }
 
-    strcat(vars->certsdir_cert, vars->certsdir);
+    snprintf(vars->certsdir_cert, CERTSBUF, "%s", getenv("CERTSDIR"))
     strcat(vars->certsdir_cert, "/cert.pem");
 
-    strcat(vars->certsdir_privkey, vars->certsdir);
+    snprintf(vars->certsdir_privkey, CERTSBUF, "%s", getenv("CERTSDIR"))
     strcat(vars->certsdir_privkey, "/privkey.pem");
 
-    strcat(vars->certsdir_rootca, vars->certsdir);
+    snprintf(vars->certsdir_rootca, CERTSBUF, "%s",            getenv("CERTSDIR"))
     strcat(vars->certsdir_rootca, "/root-CA.pem");
 
     g_print("Value of strings: \n%s \n%s \n%s \n", vars->certsdir_cert, vars->certsdir_privkey, vars->certsdir_rootca);

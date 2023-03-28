@@ -180,13 +180,16 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
             break;
         }
         case GST_MESSAGE_TAG: // Ignore Tags
+        {
             GstTagList *tags = NULL;
 
             gst_message_parse_tag (msg, &tags);
             g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
             g_print ("GST_MESSAGE_TAG from element %s\n", GST_OBJECT_NAME (msg->src));
             gst_tag_list_unref (tags);
+        }
             break;
+
         case GST_MESSAGE_STATE_CHANGED: {
                 GstState old_state;
                 GstState new_state;

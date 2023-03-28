@@ -175,13 +175,13 @@ int stream_main (int argc, char *argv[])
 
     /* Create the elements */
     data.loop       =   g_main_loop_new (NULL, FALSE);
-    data.pipeline   =   gst_pipeline_new ("PIPELINE");
+    data.pipeline   =   gst_pipeline_new ("PIPELINE__");
 
     data.source     =   gst_element_factory_make("v4l2src",         "v4l2source");
     data.mpph264enc =   gst_element_factory_make("mpph264enc",      "mpph264enc");
-    data.queue      =   gst_element_factory_make("queue",           "queue");
-    data.h264parse  =   gst_element_factory_make("h264parse",       "h264parse");
-    data.kvssink    =   gst_element_factory_make("kvssink",         "kvssink");
+    data.queue      =   gst_element_factory_make("queue",           "queue_____");
+    data.h264parse  =   gst_element_factory_make("h264parse",       "h264parse_");
+    data.kvssink    =   gst_element_factory_make("kvssink",         "kvssink___");
     
 
 

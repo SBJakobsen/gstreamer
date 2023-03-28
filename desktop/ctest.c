@@ -76,6 +76,7 @@ gboolean get_env_variables ( EnvVariables *vars){
 
 
 
+
     
 
 }
@@ -172,7 +173,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                 GstState new_state;
                 GstState pending_state;
                 gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
-                g_print("GST_MESSAGE_STATE_CHANGED: %s state change: %s --> %s:\t\t Pending state: %s\n",
+                g_print("GST_MESSAGE_STATE_CHANGED: %s \tstate change: %s --> %s:\t\t Pending state: %s\n",
                 GST_OBJECT_NAME(msg->src), gst_element_state_get_name (old_state), gst_element_state_get_name (new_state),gst_element_state_get_name (new_state));
             }
             break;

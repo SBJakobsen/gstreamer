@@ -261,7 +261,8 @@ int stream_main (int argc, char *argv[])
     }
 
     /* Iterate */
-    g_print("Running...\n");
+    g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
+    g_print("PROGRAM EXECUTION STARTED..\n");
     g_main_loop_run (data.loop);
     
     g_print ("Program finished.\n");

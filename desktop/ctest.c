@@ -83,65 +83,60 @@ gboolean get_env_variables ( EnvVariables *vars){
 
 static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
 {
-    
-   
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+
+
 
     switch (GST_MESSAGE_TYPE (msg)) {
         case GST_MESSAGE_EOS:
-            g_print ("End of stream\n");
+            g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
+            g_print ("END OF STREAM RECEIVED\n");
             g_main_loop_quit (data->loop);
         break;
         case GST_MESSAGE_ERROR: {
             GError *err = NULL;
             gchar  *debug_info = NULL;
-            
             gst_message_parse_error (msg, &err, &debug_info);
-            g_print ("GST_MESSAGE_ERROR.\n");
-            g_print ("Error from element:%s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
+
+            g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
+            g_print ("GST_MESSAGE_ERROR from element: %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
             g_print ("Debug info: %s\n", debug_info ? debug_info : "none");
 
-            // Stringcompare GST_OBJECT_NAME == "h264parse" -> reset pipeline
-            if(strcmp(GST_OBJECT_NAME(msg->src), "h264parse") == 0)
+            
+            if(strcmp(GST_OBJECT_NAME(msg->src), "h264parse") == 0 && strstr(debug_info, "No H.264 NAL") != NULL)
             {
-                g_print("Error is from the h264parse element\n");
-                if(strstr(debug_info, "No H.264 NAL") != NULL)
-                {
-                    g_print("And it is THAT error\n");
+                g_print("Attempting to recover \n");
 
-
-                    GstStateChangeReturn ret;
-                    g_print("Attempting to pause pipeline \n");
-                    ret = gst_element_set_state (data->pipeline, GST_STATE_PAUSED);
-                    if (ret == GST_STATE_CHANGE_FAILURE) {
-                        g_print ("Unable to set the pipeline to GST_STATE_PAUSED.\n");
-                        g_main_loop_quit (data->loop);
-                        return;
-                    }
-
-                    g_print("Attempting to start pipeline flush \n");
-                    gst_element_send_event(GST_ELEMENT (data->pipeline), gst_event_new_flush_start());
-
-                    g_print("Attempting to stop pipeline flush \n");
-                    gst_element_send_event(GST_ELEMENT (data->pipeline), gst_event_new_flush_stop(false));
-
-                    g_print("Attempting to re-start pipeline \n");
-                    ret = gst_element_set_state (data->pipeline, GST_STATE_PLAYING);
-                    if (ret == GST_STATE_CHANGE_FAILURE) {
-                        g_print ("Unable to set the pipeline to GST_STATE_PLAYING.\n");
-                        g_main_loop_quit (data->loop);
-                        return;
-                    }
-
+                GstStateChangeReturn ret;
+                g_print("Setting pipeline to NULL \n");
+                ret = gst_element_set_state (data->pipeline, GST_STATE_NULL);
+                if (ret == GST_STATE_CHANGE_FAILURE) {
+                    g_print ("Unable to set the pipeline to GST_STATE_NULL.\n");
                 }
-                else{
-                    g_print("but is it NOT that error. Quitting\n");
-                    g_main_loop_quit (data->loop);
+                
+                GstStructure *iot_certificate = gst_structure_new_from_string ("iot-certificate,endpoint=crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com,cert-path=/usr/src/app/certs/cert.pem,key-path=/usr/src/app/certs/privkey.pem,ca-path=/usr/src/app/certs/root-CA.pem,role-aliases=fbview-kinesis-video-access-role-alias");
+
+                g_print("Setting kvssink parameters again\n");
+                /* Modify the sink's properties */
+                g_object_set(data->kvssink, 
+                    "stream-name", "15e0dc81d12c414aa02b49b990921c8d",
+                    "framerate", (guint)30,
+                    "restart-on-error", true,
+                    "retention-period", 730,
+                    "aws-region", "eu-west-1",
+                    "log-config", "/usr/src/app/kvs_log_configuration",
+                    "iot-certificate", iot_certificate,
+                    NULL);
+
+                g_print("Setting pipeline to PLAYING \n");
+                ret = gst_element_set_state (data->pipeline, GST_STATE_PLAYING);
+                if (ret == GST_STATE_CHANGE_FAILURE) {
+                    g_print ("Unable to set the pipeline to GST_STATE_PLAYING.\n");
                 }
             }
             else{
-                if(quitloop){
-                    g_main_loop_quit (data->loop);
-                }
+                g_main_loop_quit (data->loop);
             }
 
             g_clear_error (&err);
@@ -152,6 +147,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
         case GST_MESSAGE_WARNING: {
             GError *err = NULL;
             gchar  *debug_info = NULL;
+            g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
             g_print ("GST_MESSAGE_WARNING.\n");
             gst_message_parse_warning (msg, &err, &debug_info);
             g_print("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
@@ -162,40 +158,49 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
             break;
         }
         case GST_MESSAGE_TAG: // Ignore Tags
-            // GstTagList *tags = NULL;
+            GstTagList *tags = NULL;
 
-            // gst_message_parse_tag (msg, &tags);
-            // g_print ("GST_MESSAGE_TAG from element %s\n", GST_OBJECT_NAME (msg->src));
-            // gst_tag_list_unref (tags);
+            gst_message_parse_tag (msg, &tags);
+            g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
+            g_print ("GST_MESSAGE_TAG from element %s\n", GST_OBJECT_NAME (msg->src));
+            gst_tag_list_unref (tags);
             break;
         case GST_MESSAGE_STATE_CHANGED: {
                 GstState old_state;
                 GstState new_state;
                 GstState pending_state;
                 gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
-                g_print("GST_MESSAGE_STATE_CHANGED: %s \tstate change: %s --> %s:\t\t Pending state: %s\n",
+                g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
+                g_print("GST_MESSAGE_STATE_CHANGED: %s state change: %s --> %s:\t Pending state: %s\n",
                 GST_OBJECT_NAME(msg->src), gst_element_state_get_name (old_state), gst_element_state_get_name (new_state),gst_element_state_get_name (new_state));
+                
             }
             break;
         case GST_MESSAGE_NEW_CLOCK:
+            g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
             g_print("GST_MESSAGE_NEW_CLOCK\n");
             break;
         case GST_MESSAGE_STREAM_STATUS:
+            g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
             g_print("GST_MESSAGE_STREAM_STATUS\n");
             break;
         case GST_MESSAGE_LATENCY:
+            g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
             g_print("GST_MESSAGE_LATENCY\n");
             break;
         case GST_MESSAGE_ASYNC_DONE:
+            g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
             g_print("GST_MESSAGE_ASYNC_DONE\n");
             break;
         case GST_MESSAGE_QOS:           // Ignore QoS
-            //g_print("GST_MESSAGE_QOS\n");
+            g_print("GST_MESSAGE_QOS\n");
             break;
         case GST_MESSAGE_STREAM_START:
+            g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
             g_print("GST_MESSAGE_STREAM_START\n");
             break;
         default:
+            g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
             g_print("GST_MESSAGE_TYPE enum: %d\n", GST_MESSAGE_TYPE (msg));
         break;
     }

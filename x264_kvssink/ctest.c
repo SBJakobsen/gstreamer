@@ -212,19 +212,18 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
             break;
         case GST_MESSAGE_QOS:           // Ignore QoS
             g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
-            g_print("GST_MESSAGE_QOS: ");
-            GstFormat format;
-            guint64 rendered, dropped;
-            gst_message_parse_qos_stats (msg, &format, &rendered, &dropped);
-            if(format == GST_FORMAT_UNDEFINED){
-                g_print("Error: format is \"GST_FORMAT_UNDEFINED\"\n");
-            }
-            else
-            {
-                g_print("Element is %s. \tRendered: %li\tDropped: %li", GST_OBJECT_NAME(msg->src), rendered, dropped);
-            }
+            g_print("GST_MESSAGE_QOS from element: %s", GST_OBJECT_NAME(msg->src));
 
-
+            gboolean live;
+            guint64 running_time, stream_time, timestamp, duration;
+            gst_message_parse_qos(msg, &live, &running_time, &stream_time, &timestamp, &duration);
+            if(live) {
+                g_print("\tlive: true.");
+            }
+            else{
+                g_print("\tlive: false.");
+            }
+            g_print(" \trunning_time: %li. \tStream_time: %li. \tTimestamp: %li. \tDuration: %li. \n", running_time, stream_time, timestamp, duration);
             break;
         case GST_MESSAGE_STREAM_START:
             g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
@@ -346,7 +345,9 @@ int stream_main (int argc, char *argv[])
         "do-timestamp", true,
         NULL);
 
-    //GstStructure *iot_certificate = gst_structure_new_from_string ("iot-certificate,endpoint=crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com,cert-path=/home/soren/projects/gstreamer/desktop/certs/cert.pem,key-path=/home/soren/projects/gstreamer/desktop/certs/privkey.pem,ca-path=/home/soren/projects/gstreamer/desktop/certs/root-CA.pem,role-aliases=fbview-kinesis-video-access-role-alias");
+    
+    g_print("About to set kvssink parameters!\n");
+
     data.iot_certificate = gst_structure_new("iot-certificate",
         "endpoint",     G_TYPE_STRING, vars.aws_endpoint,
         "cert-path",    G_TYPE_STRING, vars.certsdir_cert,
@@ -354,9 +355,7 @@ int stream_main (int argc, char *argv[])
         "ca-path",      G_TYPE_STRING, vars.certsdir_rootca,
         "role-aliases", G_TYPE_STRING, vars.role_alias,
         NULL);
-
-
-    g_print("About to set kvssink parameters!\n");
+    
     g_object_set(data.kvssink, 
         "stream-name", vars.resin_device_uuid,
         "framerate", (guint)vars.framerate,

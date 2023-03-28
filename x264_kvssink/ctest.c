@@ -44,6 +44,7 @@ typedef struct _EnvVariables {
     char certsdir_rootca[CERTSBUF+12];
 } EnvVariables;
 
+EnvVariables vars;
 
 gboolean get_env_variables ( EnvVariables *vars){
     if( !getenv("WIDTH") || !getenv("HEIGHT") || !getenv("FRAMERATE") || !getenv("RESIN_DEVICE_UUID") || 
@@ -134,14 +135,14 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                 }
                 
                 
-                 g_object_set(data.kvssink, 
+                 g_object_set(data->kvssink, 
                     "stream-name", vars.resin_device_uuid,
                     "framerate", (guint)vars.framerate,
                     "restart-on-error", true,
                     "retention-period", 730,
                     "aws-region", vars.aws_region,
                     "log-config", "./kvs_log_configuration",
-                    "iot-certificate", data.iot_certificate,
+                    "iot-certificate", data->iot_certificate,
                     NULL);
 
                 g_print("Setting pipeline to PLAYING \n");
@@ -211,7 +212,19 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
             break;
         case GST_MESSAGE_QOS:           // Ignore QoS
             g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
-            g_print("GST_MESSAGE_QOS\n");
+            g_print("GST_MESSAGE_QOS: ");
+            GstFormat format;
+            guint64 rendered, dropped;
+            gst_message_parse_qos_stats (msg, &format, &rendered, &dropped);
+            if(format == GST_FORMAT_UNDEFINED){
+                g_print("Error: format is \"GST_FORMAT_UNDEFINED\"\n");
+            }
+            else
+            {
+                g_print("Element is %s. \tRendered: %li\tDropped: %li", GST_OBJECT_NAME(msg->src), rendered, dropped);
+            }
+
+
             break;
         case GST_MESSAGE_STREAM_START:
             g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
@@ -248,7 +261,7 @@ int stream_main (int argc, char *argv[])
     GstMessage *msg;
     GstStateChangeReturn ret;
 
-    EnvVariables vars;
+    
     if(!get_env_variables(&vars))
     {
         exit(1);
@@ -257,6 +270,13 @@ int stream_main (int argc, char *argv[])
 
     /* Initialize GStreamer */
     gst_init (&argc, &argv);
+
+
+
+    /*************************************/
+    /*      PROJECT DIFFERENCE START     */
+    /*************************************/
+
 
 
     /* Create the elements */
@@ -349,8 +369,13 @@ int stream_main (int argc, char *argv[])
         
     g_print("Finished setting kvssink parameters!\n");
 
-    //g_print("Test program over. Quitting\n");
-    //return 0;
+
+
+    /*************************************/
+    /*      PROJECT DIFFERENCE END     */
+    /*************************************/
+
+
 
     /* Start playing */
     ret = gst_element_set_state (data.pipeline, GST_STATE_PLAYING);

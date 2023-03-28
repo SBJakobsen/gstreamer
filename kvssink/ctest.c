@@ -94,11 +94,12 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
             break;
         }
         case GST_MESSAGE_TAG: // Ignore Tags
-            // GstTagList *tags = NULL;
+            GstTagList *tags = NULL;
 
-            // gst_message_parse_tag (msg, &tags);
-            // g_print ("GST_MESSAGE_TAG from element %s\n", GST_OBJECT_NAME (msg->src));
-            // gst_tag_list_unref (tags);
+            gst_message_parse_tag (msg, &tags);
+            g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
+            g_print ("GST_MESSAGE_TAG from element %s\n", GST_OBJECT_NAME (msg->src));
+            gst_tag_list_unref (tags);
             break;
         case GST_MESSAGE_STATE_CHANGED: {
                 GstState old_state;
@@ -107,19 +108,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                 gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
                 g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
                 g_print("GST_MESSAGE_STATE_CHANGED: %s state change: %s --> %s:\t Pending state: %s\n",
-                    GST_OBJECT_NAME(msg->src), gst_element_state_get_name (old_state), gst_element_state_get_name (new_state),gst_element_state_get_name (new_state));
-                // if(strcmp(GST_OBJECT_NAME(msg->src), "PIPELINE") == 0 && strcmp(gst_element_state_get_name (new_state), "NULL") == 0)
-                // {
-                //     g_print("PIPELINE WAS SET TO NULL, ATTEMPTING TO START PLAYING AGAIN");
-                //     GstStateChangeReturn ret;
-                //     ret = gst_element_set_state (data->pipeline, GST_STATE_PLAYING);
-                //     if (ret == GST_STATE_CHANGE_FAILURE) {
-                //         g_print ("Unable to set the pipeline to GST_STATE_PLAYING.\n");
-                //         //g_main_loop_quit (data->loop);
-                //     }
-                //     
-                // }
-                
+                GST_OBJECT_NAME(msg->src), gst_element_state_get_name (old_state), gst_element_state_get_name (new_state),gst_element_state_get_name (new_state));
             }
             break;
         case GST_MESSAGE_NEW_CLOCK:
@@ -139,7 +128,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
             g_print("GST_MESSAGE_ASYNC_DONE\n");
             break;
         case GST_MESSAGE_QOS:           // Ignore QoS
-            //g_print("GST_MESSAGE_QOS\n");
+            g_print("GST_MESSAGE_QOS\n");
             break;
         case GST_MESSAGE_STREAM_START:
             g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
@@ -261,7 +250,7 @@ int stream_main (int argc, char *argv[])
     }
 
     /* Iterate */
-    g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
+   
     g_print("PROGRAM EXECUTION STARTED..\n");
     g_main_loop_run (data.loop);
     

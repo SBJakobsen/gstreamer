@@ -173,7 +173,6 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                 g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
                 g_print("GST_MESSAGE_STATE_CHANGED: %s state change: %s --> %s:\t Pending state: %s\n",
                 GST_OBJECT_NAME(msg->src), gst_element_state_get_name (old_state), gst_element_state_get_name (new_state),gst_element_state_get_name (new_state));
-                
             }
             break;
         case GST_MESSAGE_NEW_CLOCK:

@@ -56,7 +56,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                 g_print("Setting kvssink parameters again\n");
                 /* Modify the sink's properties */
                 g_object_set(data->kvssink, 
-                    "stream-name", "15e0dc81d12c414aa02b49b990921c8d",
+                    "stream-name", "38358b2076c323913cc09dea3efa163f",
                     "framerate", (guint)30,
                     "restart-on-error", true,
                     "retention-period", 730,

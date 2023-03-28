@@ -26,7 +26,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
 
     switch (GST_MESSAGE_TYPE (msg)) {
         case GST_MESSAGE_EOS:
-            g_print ("[%d-%d %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon ,tm.tm_hour, tm.tm_min, tm.tm_sec);
+            g_print ("[%d/%d - %02d:%02d:%02d]\n ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
             g_print ("END OF STREAM RECEIVED\n");
             g_main_loop_quit (data->loop);
         break;
@@ -35,7 +35,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
             gchar  *debug_info = NULL;
             gst_message_parse_error (msg, &err, &debug_info);
 
-            g_print ("[%d-%d %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon ,tm.tm_hour, tm.tm_min, tm.tm_sec);
+            g_print ("[%d/%d - %02d:%02d:%02d]\n ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
             g_print ("GST_MESSAGE_ERROR from element: %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
             g_print ("Debug info: %s\n", debug_info ? debug_info : "none");
 
@@ -83,7 +83,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
         case GST_MESSAGE_WARNING: {
             GError *err = NULL;
             gchar  *debug_info = NULL;
-            g_print ("[%d-%d %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon ,tm.tm_hour, tm.tm_min, tm.tm_sec);
+            g_print ("[%d/%d - %02d:%02d:%02d]\n ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
             g_print ("GST_MESSAGE_WARNING.\n");
             gst_message_parse_warning (msg, &err, &debug_info);
             g_print("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
@@ -105,7 +105,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                 GstState new_state;
                 GstState pending_state;
                 gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
-                g_print ("[%d-%d %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon ,tm.tm_hour, tm.tm_min, tm.tm_sec);
+                g_print ("[%d/%d - %02d:%02d:%02d]\n ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
                 g_print("GST_MESSAGE_STATE_CHANGED: %s state change: %s --> %s:\t\t Pending state: %s\n",
                     GST_OBJECT_NAME(msg->src), gst_element_state_get_name (old_state), gst_element_state_get_name (new_state),gst_element_state_get_name (new_state));
                 // if(strcmp(GST_OBJECT_NAME(msg->src), "PIPELINE") == 0 && strcmp(gst_element_state_get_name (new_state), "NULL") == 0)
@@ -123,30 +123,30 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
             }
             break;
         case GST_MESSAGE_NEW_CLOCK:
-            g_print ("[%d-%d %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon ,tm.tm_hour, tm.tm_min, tm.tm_sec);
+            g_print ("[%d/%d - %02d:%02d:%02d]\n ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
             g_print("GST_MESSAGE_NEW_CLOCK\n");
             break;
         case GST_MESSAGE_STREAM_STATUS:
-            g_print ("[%d-%d %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon ,tm.tm_hour, tm.tm_min, tm.tm_sec);
+            g_print ("[%d/%d - %02d:%02d:%02d]\n ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
             g_print("GST_MESSAGE_STREAM_STATUS\n");
             break;
         case GST_MESSAGE_LATENCY:
-            g_print ("[%d-%d %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon ,tm.tm_hour, tm.tm_min, tm.tm_sec);
+            g_print ("[%d/%d - %02d:%02d:%02d]\n ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
             g_print("GST_MESSAGE_LATENCY\n");
             break;
         case GST_MESSAGE_ASYNC_DONE:
-            g_print ("[%d-%d %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon ,tm.tm_hour, tm.tm_min, tm.tm_sec);
+            g_print ("[%d/%d - %02d:%02d:%02d]\n ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
             g_print("GST_MESSAGE_ASYNC_DONE\n");
             break;
         case GST_MESSAGE_QOS:           // Ignore QoS
             //g_print("GST_MESSAGE_QOS\n");
             break;
         case GST_MESSAGE_STREAM_START:
-            g_print ("[%d-%d %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon ,tm.tm_hour, tm.tm_min, tm.tm_sec);
+            g_print ("[%d/%d - %02d:%02d:%02d]\n ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
             g_print("GST_MESSAGE_STREAM_START\n");
             break;
         default:
-            g_print ("[%d-%d %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon ,tm.tm_hour, tm.tm_min, tm.tm_sec);
+            g_print ("[%d/%d - %02d:%02d:%02d]\n ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
             g_print("GST_MESSAGE_TYPE enum: %d\n", GST_MESSAGE_TYPE (msg));
         break;
     }
@@ -157,13 +157,16 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
 int stream_main (int argc, char *argv[])
 {
 
+    setenv("TZ", "CESTUTC-2", 1);
+    tzset();
+    
+
     CustomData data;
     GstBus *bus;
     guint bus_watch_id;
 
     GstMessage *msg;
     GstStateChangeReturn ret;
-    
 
 
     /* Initialize GStreamer */

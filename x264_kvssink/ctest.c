@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <time.h>
 
+
 #define WIDTHBUF 20
 #define HEIGHTBUF 20
 #define FRAMEBUF 20
@@ -13,7 +14,6 @@
 #define ROLEBUF 50
 #define AWSRBUF 20
 
-bool quitloop = true;
 
 typedef struct _CustomData {
   GstElement *pipeline;
@@ -45,10 +45,7 @@ typedef struct _EnvVariables {
 } EnvVariables;
 
 
-
 gboolean get_env_variables ( EnvVariables *vars){
-
-
     if( !getenv("WIDTH") || !getenv("HEIGHT") || !getenv("FRAMERATE") || !getenv("RESIN_DEVICE_UUID") || 
         !getenv("CERTSDIR") || !getenv("AWS_ENDPOINT") || !getenv("ROLE_ALIAS") || !getenv("AWS_REGION"))
         {
@@ -102,15 +99,12 @@ gboolean get_env_variables ( EnvVariables *vars){
     }
     g_print("Values:\n\tWIDTH: %i\n", vars->width);
     return true;
-
 }
 
 static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
 {
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
-
-
 
     switch (GST_MESSAGE_TYPE (msg)) {
         case GST_MESSAGE_EOS:
@@ -139,18 +133,15 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                     g_print ("Unable to set the pipeline to GST_STATE_NULL.\n");
                 }
                 
-                GstStructure *iot_certificate = gst_structure_new_from_string ("iot-certificate,endpoint=crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com,cert-path=/usr/src/app/certs/cert.pem,key-path=/usr/src/app/certs/privkey.pem,ca-path=/usr/src/app/certs/root-CA.pem,role-aliases=fbview-kinesis-video-access-role-alias");
-
-                g_print("Setting kvssink parameters again\n");
-                /* Modify the sink's properties */
-                g_object_set(data->kvssink, 
-                    "stream-name", "15e0dc81d12c414aa02b49b990921c8d",
-                    "framerate", (guint)30,
+                
+                 g_object_set(data.kvssink, 
+                    "stream-name", vars.resin_device_uuid,
+                    "framerate", (guint)vars.framerate,
                     "restart-on-error", true,
                     "retention-period", 730,
-                    "aws-region", "eu-west-1",
-                    "log-config", "/usr/src/app/kvs_log_configuration",
-                    "iot-certificate", iot_certificate,
+                    "aws-region", vars.aws_region,
+                    "log-config", "./kvs_log_configuration",
+                    "iot-certificate", data.iot_certificate,
                     NULL);
 
                 g_print("Setting pipeline to PLAYING \n");
@@ -219,6 +210,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
             g_print("GST_MESSAGE_ASYNC_DONE\n");
             break;
         case GST_MESSAGE_QOS:           // Ignore QoS
+            g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
             g_print("GST_MESSAGE_QOS\n");
             break;
         case GST_MESSAGE_STREAM_START:
@@ -246,6 +238,9 @@ static void fps_measurements_callback (GstElement * fpsdisplaysink, gdouble fps,
 int stream_main (int argc, char *argv[])
 {
 
+    setenv("TZ", "CESTUTC-2", 1);
+    tzset();
+
     CustomData data;
     GstBus *bus;
     guint bus_watch_id;
@@ -258,8 +253,6 @@ int stream_main (int argc, char *argv[])
     {
         exit(1);
     }
-
-    
 
 
     /* Initialize GStreamer */
@@ -287,6 +280,7 @@ int stream_main (int argc, char *argv[])
     bus = gst_pipeline_get_bus (GST_PIPELINE (data.pipeline));
     gst_bus_add_signal_watch (bus);
     g_signal_connect (bus, "message", G_CALLBACK (bus_call), &data);
+    gst_object_unref(bus);
     //g_signal_connect (data.fpssink, "fps-measurements", G_CALLBACK(fps_measurements_callback), NULL);
 
     
@@ -341,8 +335,8 @@ int stream_main (int argc, char *argv[])
         "role-aliases", G_TYPE_STRING, vars.role_alias,
         NULL);
 
+
     g_print("About to set kvssink parameters!\n");
-    /* Modify the sink's properties */
     g_object_set(data.kvssink, 
         "stream-name", vars.resin_device_uuid,
         "framerate", (guint)vars.framerate,
@@ -367,7 +361,7 @@ int stream_main (int argc, char *argv[])
     }
 
     /* Iterate */
-    g_print("Running...\n");
+    g_print("PROGRAM EXECUTION STARTED..\n");
     g_main_loop_run (data.loop);
     
     g_print ("Program finished.\n");

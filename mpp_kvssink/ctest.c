@@ -5,24 +5,106 @@
 #include <time.h>
 
 
+#define WIDTHBUF 20
+#define HEIGHTBUF 20
+#define FRAMEBUF 20
+#define RESINBUF 40
+#define CERTSBUF 60
+#define ENDPBUF 70
+#define ROLEBUF 50
+#define AWSRBUF 20
+
+
 typedef struct _CustomData {
   GstElement *pipeline;
   GMainLoop  *loop;
   GstElement *source;
-  GstElement *mpph264enc;
-  GstElement *queue;
+  GstElement *videoconvert;
+  GstElement *x264enc;
   GstElement *h264parse;
   GstElement *kvssink;
+  GstStructure *iot_certificate;
 } CustomData;
 
+typedef struct _EnvVariables {
+    char charwidth[WIDTHBUF];
+    char charheight[HEIGHTBUF];
+    char charframerate[FRAMEBUF];
+    int  width;
+    int  height;
+    int  framerate;
 
+    char resin_device_uuid[RESINBUF];
+    char aws_endpoint[ENDPBUF];
+    char role_alias[ROLEBUF];
+    char aws_region[AWSRBUF];
+    char certsdir[CERTSBUF];
+    char certsdir_cert[CERTSBUF+12];
+    char certsdir_privkey[CERTSBUF+12];
+    char certsdir_rootca[CERTSBUF+12];
+} EnvVariables;
+
+
+gboolean get_env_variables ( EnvVariables *vars){
+    if( !getenv("WIDTH") || !getenv("HEIGHT") || !getenv("FRAMERATE") || !getenv("RESIN_DEVICE_UUID") || 
+        !getenv("CERTSDIR") || !getenv("AWS_ENDPOINT") || !getenv("ROLE_ALIAS") || !getenv("AWS_REGION"))
+        {
+        g_print("Missing some required environment variable\n");
+        return false;
+    }
+
+    if( snprintf(vars->charwidth, WIDTHBUF, "%s",           getenv("WIDTH")) >= WIDTHBUF ||
+        snprintf(vars->charheight, HEIGHTBUF, "%s",         getenv("HEIGHT")) >= HEIGHTBUF || 
+        snprintf(vars->charframerate, FRAMEBUF, "%s",       getenv("FRAMERATE")) >= FRAMEBUF || 
+        snprintf(vars->resin_device_uuid, RESINBUF, "%s",   getenv("RESIN_DEVICE_UUID")) >= RESINBUF || 
+        snprintf(vars->certsdir, CERTSBUF, "%s",            getenv("CERTSDIR")) >= CERTSBUF || 
+        snprintf(vars->aws_endpoint, ENDPBUF, "%s",         getenv("AWS_ENDPOINT")) >= ENDPBUF || 
+        snprintf(vars->role_alias, ROLEBUF, "%s",           getenv("ROLE_ALIAS")) >= ROLEBUF || 
+        snprintf(vars->aws_region, AWSRBUF, "%s",           getenv("AWS_REGION")) >= AWSRBUF)
+        {
+        g_print("A environment variable did not fit within its' buffer\n");
+        return false;
+    }
+
+    snprintf(vars->certsdir_cert, CERTSBUF, "%s", getenv("CERTSDIR"));
+    strcat(vars->certsdir_cert, "/cert.pem");
+
+    snprintf(vars->certsdir_privkey, CERTSBUF, "%s", getenv("CERTSDIR"));
+    strcat(vars->certsdir_privkey, "/privkey.pem");
+
+    snprintf(vars->certsdir_rootca, CERTSBUF, "%s",            getenv("CERTSDIR"));
+    strcat(vars->certsdir_rootca, "/root-CA.pem");
+
+    g_print("Value of strings: \n%s \n%s \n%s \n", vars->certsdir_cert, vars->certsdir_privkey, vars->certsdir_rootca);
+
+
+    // Converting WIDTH, HEIGHT and FRAMERATE to integers and providing default values. 
+    vars->width     = atoi(vars->charwidth);
+    vars->height    = atoi(vars->charheight);
+    vars->framerate = atoi(vars->charframerate);
+
+    if(vars->width < 640 || vars->width > 1920){
+        g_print("Invalid width set. Defaulting to 640.\n");
+        vars->width = 640;
+    }
+
+    if(vars->height < 480 || vars->height > 1080){
+        g_print("Invalid height set. Defaulting to 480.\n");
+        vars->height = 480;
+    }
+
+    if(vars->framerate < 5 || vars->framerate > 30){
+        g_print("Invalid framerate set. Defaulting to 30.\n");
+        vars->framerate = 30;
+    }
+    g_print("Values:\n\tWIDTH: %i\n", vars->width);
+    return true;
+}
 
 static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
 {
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
-
-
 
     switch (GST_MESSAGE_TYPE (msg)) {
         case GST_MESSAGE_EOS:
@@ -51,18 +133,15 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                     g_print ("Unable to set the pipeline to GST_STATE_NULL.\n");
                 }
                 
-                GstStructure *iot_certificate = gst_structure_new_from_string ("iot-certificate,endpoint=crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com,cert-path=/usr/src/app/certs/cert.pem,key-path=/usr/src/app/certs/privkey.pem,ca-path=/usr/src/app/certs/root-CA.pem,role-aliases=fbview-kinesis-video-access-role-alias");
-
-                g_print("Setting kvssink parameters again\n");
-                /* Modify the sink's properties */
-                g_object_set(data->kvssink, 
-                    "stream-name", "38358b2076c323913cc09dea3efa163f",
-                    "framerate", (guint)30,
+                
+                 g_object_set(data.kvssink, 
+                    "stream-name", vars.resin_device_uuid,
+                    "framerate", (guint)vars.framerate,
                     "restart-on-error", true,
                     "retention-period", 730,
-                    "aws-region", "eu-west-1",
-                    "log-config", "/usr/src/app/kvs_log_configuration",
-                    "iot-certificate", iot_certificate,
+                    "aws-region", vars.aws_region,
+                    "log-config", "./kvs_log_configuration",
+                    "iot-certificate", data.iot_certificate,
                     NULL);
 
                 g_print("Setting pipeline to PLAYING \n");
@@ -94,22 +173,23 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
             break;
         }
         case GST_MESSAGE_TAG: // Ignore Tags
-            {
-                GstTagList *tags = NULL;
+        {
+            GstTagList *tags = NULL;
 
-                gst_message_parse_tag (msg, &tags);
-                g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
-                g_print ("GST_MESSAGE_TAG from element %s\n", GST_OBJECT_NAME (msg->src));
-                gst_tag_list_unref (tags);
-            }
+            gst_message_parse_tag (msg, &tags);
+            g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
+            g_print ("GST_MESSAGE_TAG from element %s\n", GST_OBJECT_NAME (msg->src));
+            gst_tag_list_unref (tags);
+        }
             break;
+
         case GST_MESSAGE_STATE_CHANGED: {
                 GstState old_state;
                 GstState new_state;
                 GstState pending_state;
                 gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
                 g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
-                g_print("GST_MESSAGE_STATE_CHANGED: %s state change: %s --> %s:\t Pending state: %s\n",
+                g_print("GST_MESSAGE_STATE_CHANGED: %s \tstate change: %s --> %s: \tPending state: %s\n",
                 GST_OBJECT_NAME(msg->src), gst_element_state_get_name (old_state), gst_element_state_get_name (new_state),gst_element_state_get_name (new_state));
             }
             break;
@@ -130,6 +210,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
             g_print("GST_MESSAGE_ASYNC_DONE\n");
             break;
         case GST_MESSAGE_QOS:           // Ignore QoS
+            g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
             g_print("GST_MESSAGE_QOS\n");
             break;
         case GST_MESSAGE_STREAM_START:
@@ -151,13 +232,18 @@ int stream_main (int argc, char *argv[])
     setenv("TZ", "CESTUTC-2", 1);
     tzset();
     
-
     CustomData data;
     GstBus *bus;
     guint bus_watch_id;
 
     GstMessage *msg;
     GstStateChangeReturn ret;
+
+    EnvVariables vars;
+    if(!get_env_variables(&vars))
+    {
+        exit(1);
+    }
 
 
     /* Initialize GStreamer */
@@ -192,8 +278,13 @@ int stream_main (int argc, char *argv[])
     gst_bin_add_many (GST_BIN (data.pipeline), data.source, data.mpph264enc, data.queue, data.h264parse, data.kvssink, NULL); 
 
     // source -> mpph264 -> queue -> 264parse -> kvssink
-    GstCaps *caps1;
-    caps1 = gst_caps_from_string("video/x-raw,width=640,height=480, framerate=30/1");
+    GstCaps *caps0;
+    caps0 = gst_caps_new_simple("video/x-raw",
+        "width",    G_TYPE_INT, vars.width,
+        "height",   G_TYPE_INT, vars.height,
+        "framerate",GST_TYPE_FRACTION, vars.framerate,1,
+        NULL);
+    
     if (gst_element_link_filtered(data.source, data.mpph264enc, caps1) != TRUE) {
         g_print ("Source and mpph264enc could not be linked\n");
         gst_object_unref (data.pipeline);
@@ -212,9 +303,9 @@ int stream_main (int argc, char *argv[])
         return -1;
     }
 
-    GstCaps *caps2;  
-    caps2 = gst_caps_from_string("video/x-h264,stream-format=avc,alignment=au");
-    if (gst_element_link_filtered(data.h264parse, data.kvssink, caps2) != TRUE) {
+    GstCaps *caps1;  
+    caps1 = gst_caps_from_string("video/x-h264,stream-format=avc,alignment=au");
+    if (gst_element_link_filtered(data.h264parse, data.kvssink, caps1) != TRUE) {
         g_print ("h264parse and kvssink could not be linked");
         gst_object_unref (data.pipeline);
         return -1;
@@ -229,18 +320,17 @@ int stream_main (int argc, char *argv[])
     GstStructure *iot_certificate = gst_structure_new_from_string ("iot-certificate,endpoint=crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com,cert-path=/usr/src/app/certs/cert.pem,key-path=/usr/src/app/certs/privkey.pem,ca-path=/usr/src/app/certs/root-CA.pem,role-aliases=fbview-kinesis-video-access-role-alias");
 
     g_print("About to set kvssink parameters!\n");
-    /* Modify the sink's properties */
     g_object_set(data.kvssink, 
-        "stream-name", "38358b2076c323913cc09dea3efa163f",
-        "framerate", (guint)30,
+        "stream-name", vars.resin_device_uuid,
+        "framerate", (guint)vars.framerate,
         "restart-on-error", true,
         "retention-period", 730,
-        "aws-region", "eu-west-1",
-        "log-config", "/usr/src/app/kvs_log_configuration",
-        "iot-certificate", iot_certificate,
+        "aws-region", vars.aws_region,
+        "log-config", "./kvs_log_configuration",
+        "iot-certificate", data.iot_certificate,
         NULL);
-
-    g_print("Kvssink parameters set!\n");
+        
+    g_print("Finished setting kvssink parameters!\n");
 
 
     /* Start playing */

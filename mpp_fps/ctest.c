@@ -60,8 +60,8 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                         //return;
                     }
                     
-                    g_print ("Unreffing pipeline as part of memory leak test\n");
-                    gst_object_unref (data->pipeline);   
+                    // g_print ("Unreffing pipeline as part of memory leak test\n");
+                    // gst_object_unref (data->pipeline);   
                     
 
                     g_print("And then attempting setting it back to PLAYING \n");

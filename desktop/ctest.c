@@ -4,7 +4,14 @@
 #include <unistd.h>
 #include <time.h>
 
-#define DELAY_VALUE 7500
+#define WIDTHBUF 20
+#define HEIGHTBUF 20
+#define FRAMEBUF 20
+#define RESINBUF 20
+#define CERTSBUF 20
+#define ENDPBUF 20
+#define ROLEBUF 20
+#define AWSRBUF 20
 
 bool quitloop = true;
 
@@ -19,23 +26,59 @@ typedef struct _CustomData {
 } CustomData;
 
 typedef struct _EnvVariables {
+    char charwidth[WIDTHBUF];
+    char charheight[HEIGHTBUF];
+    char charframerate[FRAMEBUF];
+    int  width;
+    int  height;
+    int  framerate;
+    char resin_device_uuid[RESINBUF];
+    char certsdir[CERTSBUF];
+    char aws_endpoint[ENDPBUF];
+    char role_alias[ROLEBUF];
+    char aws_region[AWSRBUF];
+} EnvVariables;
 
-} EnvVariables
+
+
+gboolean get_env_variables ( EnvVariables *vars){
+    char *p_width               = "WIDTH";
+    char *p_height              = "HEIGHT";
+    char *p_framerate           = "FRAMERATE";
+    char *p_resin_device_uuid   = "RESIN_DEVICE_UUID";
+    char *p_certsdir            = "CERTSDIR";
+    char *p_aws_endpoint        = "AWS_ENDPOINT";
+    char *p_role_alias          = "ROLE_ALIAS";
+    char *p_aws_region          = "AWS_REGION";
+    
+    if( !getenv(p_width) || !getenv(p_height) || !getenv(p_framerate) || !getenv(p_resin_device_uuid) || 
+        !getenv(p_certsdir) || !getenv(p_aws_endpoint) || !getenv(p_role_alias) || !getenv(p_aws_region))
+        {
+        g_print("Missing some required environment variable\n");
+        return false;
+    }
+
+    if( snprintf(vars->width, WIDTHBUF, "%s",               getenv(p_width)) >= WIDTHBUF ||
+        snprintf(vars->height, HEIGHTBUF, "%s",             getenv(p_height)) >= HEIGHTBUF || 
+        snprintf(vars->framerate, FRAMEBUF, "%s",           getenv(p_framerate)) >= FRAMEBUF || 
+        snprintf(vars->resin_device_uuid, RESINBUF, "%s",   getenv(p_resin_device_uuid)) >= RESINBUF || 
+        snprintf(vars->certsdir, CERTSBUF, "%s",            getenv(p_certsdir)) >= CERTSBUF || 
+        snprintf(vars->aws_endpoint, ENDPBUF, "%s",         getenv(p_aws_endpoint)) >= ENDPBUF || 
+        snprintf(vars->role_alias, ROLEBUF, "%s",           getenv(p_role_alias)) >= ROLEBUF || 
+        snprintf(vars->aws_region, AWSRBUF, "%s",           getenv(p_aws_region)) >= AWSRBUF
+        ){
+        g_print("A environment variable did not fit within its' buffer");
+        return false;
+    }
+
+    // Implement converting WIDTH, HEIGHT and FRAMERATE to integers. 
 
 
 
-/*
-WIDTH
-HEIGHT
-FRAMERATE
-RESIN_DEVICE_UUID
-AWS_ENDPOINT
-CERTSDIR
-ROLE_ALIAS
-AWS_REGION
-*/
 
-boolean get_env_variables ()
+    
+
+}
 
 static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
 {
@@ -177,6 +220,12 @@ int stream_main (int argc, char *argv[])
 
     GstMessage *msg;
     GstStateChangeReturn ret;
+
+    EnvVariables vars;
+    if(!get_env_variables(&vars))
+    {
+        exit(1);
+    }
 
     data.loop = g_main_loop_new (NULL, FALSE);
 

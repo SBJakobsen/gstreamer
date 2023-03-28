@@ -7,10 +7,10 @@
 #define WIDTHBUF 20
 #define HEIGHTBUF 20
 #define FRAMEBUF 20
-#define RESINBUF 20
-#define CERTSBUF 20
-#define ENDPBUF 20
-#define ROLEBUF 20
+#define RESINBUF 40
+#define CERTSBUF 60
+#define ENDPBUF 60
+#define ROLEBUF 50
 #define AWSRBUF 20
 
 bool quitloop = true;
@@ -32,6 +32,7 @@ typedef struct _EnvVariables {
     int  width;
     int  height;
     int  framerate;
+
     char resin_device_uuid[RESINBUF];
     char certsdir[CERTSBUF];
     char aws_endpoint[ENDPBUF];
@@ -42,42 +43,48 @@ typedef struct _EnvVariables {
 
 
 gboolean get_env_variables ( EnvVariables *vars){
-    char *p_width               = "WIDTH";
-    char *p_height              = "HEIGHT";
-    char *p_framerate           = "FRAMERATE";
-    char *p_resin_device_uuid   = "RESIN_DEVICE_UUID";
-    char *p_certsdir            = "CERTSDIR";
-    char *p_aws_endpoint        = "AWS_ENDPOINT";
-    char *p_role_alias          = "ROLE_ALIAS";
-    char *p_aws_region          = "AWS_REGION";
-    
-    if( !getenv(p_width) || !getenv(p_height) || !getenv(p_framerate) || !getenv(p_resin_device_uuid) || 
-        !getenv(p_certsdir) || !getenv(p_aws_endpoint) || !getenv(p_role_alias) || !getenv(p_aws_region))
+
+
+    if( !getenv("WIDTH") || !getenv("HEIGHT") || !getenv("FRAMERATE") || !getenv("RESIN_DEVICE_UUID") || 
+        !getenv("CERTSDIR") || !getenv("AWS_ENDPOINT") || !getenv("ROLE_ALIAS") || !getenv("AWS_REGION"))
         {
         g_print("Missing some required environment variable\n");
         return false;
     }
 
-    if( snprintf(vars->width, WIDTHBUF, "%s",               getenv(p_width)) >= WIDTHBUF ||
-        snprintf(vars->height, HEIGHTBUF, "%s",             getenv(p_height)) >= HEIGHTBUF || 
-        snprintf(vars->framerate, FRAMEBUF, "%s",           getenv(p_framerate)) >= FRAMEBUF || 
-        snprintf(vars->resin_device_uuid, RESINBUF, "%s",   getenv(p_resin_device_uuid)) >= RESINBUF || 
-        snprintf(vars->certsdir, CERTSBUF, "%s",            getenv(p_certsdir)) >= CERTSBUF || 
-        snprintf(vars->aws_endpoint, ENDPBUF, "%s",         getenv(p_aws_endpoint)) >= ENDPBUF || 
-        snprintf(vars->role_alias, ROLEBUF, "%s",           getenv(p_role_alias)) >= ROLEBUF || 
-        snprintf(vars->aws_region, AWSRBUF, "%s",           getenv(p_aws_region)) >= AWSRBUF
+    if( snprintf(vars->charwidth, WIDTHBUF, "%s",           getenv("WIDTH")) >= WIDTHBUF ||
+        snprintf(vars->charheight, HEIGHTBUF, "%s",         getenv("HEIGHT")) >= HEIGHTBUF || 
+        snprintf(vars->charframerate, FRAMEBUF, "%s",       getenv("FRAMERATE")) >= FRAMEBUF || 
+        snprintf(vars->resin_device_uuid, RESINBUF, "%s",   getenv("RESIN_DEVICE_UUID")) >= RESINBUF || 
+        snprintf(vars->certsdir, CERTSBUF, "%s",            getenv("CERTSDIR")) >= CERTSBUF || 
+        snprintf(vars->aws_endpoint, ENDPBUF, "%s",         getenv("AWS_ENDPOINT")) >= ENDPBUF || 
+        snprintf(vars->role_alias, ROLEBUF, "%s",           getenv("ROLE_ALIAS")) >= ROLEBUF || 
+        snprintf(vars->aws_region, AWSRBUF, "%s",           getenv("AWS_REGION")) >= AWSRBUF
         ){
-        g_print("A environment variable did not fit within its' buffer");
+        g_print("A environment variable did not fit within its' buffer\n");
         return false;
     }
 
     // Implement converting WIDTH, HEIGHT and FRAMERATE to integers. 
+    vars->width     = atoi(vars->charwidth);
+    vars->height    = atoi(vars->charheight);
+    vars->framerate = atoi(vars->charframerate);
 
+    if(vars->width < 640 || vars->width > 1920){
+        g_print("Invalid width set. Defaulting to 640.\n");
+        vars->width = 640;
+    }
 
+    if(vars->height < 480 || vars->height > 1080){
+        g_print("Invalid height set. Defaulting to 480.\n");
+        vars->height = 480;
+    }
 
-
-
-    
+    if(vars->framerate < 5 || vars->framerate > 30){
+        g_print("Invalid framerate set. Defaulting to 30.\n");
+        vars->framerate = 30;
+    }
+    g_print("Values:\n\tWIDTH: %i\n", vars->width);
 
 }
 
@@ -171,7 +178,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                 GstState pending_state;
                 gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
                 g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
-                g_print("GST_MESSAGE_STATE_CHANGED: %s state change: %s --> %s:\t Pending state: %s\n",
+                g_print("GST_MESSAGE_STATE_CHANGED: %s \tstate change: %s --> %s: \tPending state: %s\n",
                 GST_OBJECT_NAME(msg->src), gst_element_state_get_name (old_state), gst_element_state_get_name (new_state),gst_element_state_get_name (new_state));
             }
             break;
@@ -325,33 +332,6 @@ int stream_main (int argc, char *argv[])
         "iot-certificate", iot_certificate,
         NULL);
         
-        
-    // g_object_set(data.kvssink,
-    //     "iot-certificate", "endpoint=crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com",
-    //     NULL);
-        //cert-path=/certs/cert.pem,key-path=/certs/privkey.pem,ca-path=/certs/root-CA.pem,role-aliases=fbview-kinesis-video-access-role-alias
-        //,
-        //"iot-certificate", "iot-certificate,endpoint=crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com,cert-path=/certs/cert.pem,key-path=/certs/privkey.pem,
-        //ca-path=/certs/root-CA.pem,role-aliases=fbview-kinesis-video-access-role-alias",
-
-    // gchar *stream_name;
-    // gint framerate;
-    // bool restart_on_error;
-    // guint retention_period;
-    // gchar *log_config;
-    // gchar *iot_certificate;
-
-    // g_object_get(data.kvssink,
-    //     "stream-name", &stream_name,
-    //     "framerate", &framerate,
-    //     "restart-on-error", &restart_on_error,
-    //     "retention-period", &retention_period,
-    //     "log-config", &log_config,
-    //     "iot-certificate", &iot_certificate,
-    //     NULL);
-    
-    // g_print("\nThe values are \nstream name: %s\nFramerate: %i \nRetention-period: %i \nLog-config: %s \niot-certificate: %s\n\n", stream_name, framerate, retention_period, log_config, iot_certificate);
-
     g_print("Finished setting kvssink parameters!\n");
 
     g_print("Test program over. Quitting\n");

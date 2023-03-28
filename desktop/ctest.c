@@ -78,6 +78,8 @@ gboolean get_env_variables ( EnvVariables *vars){
     strcat(vars->certsdir_rootca, vars->certsdir);
     strcat(vars->certsdir_rootca, "/root-CA.pem");
 
+    g_print("Value of strings: \n%s \n%s \n%s \n", vars->certsdir_cert, vars->certsdir_privkey, vars->certsdir_rootca);
+
 
     // Converting WIDTH, HEIGHT and FRAMERATE to integers and providing default values. 
     vars->width     = atoi(vars->charwidth);

@@ -106,7 +106,7 @@ static void bus_call (GstBus *bus, GstMessage *msg, CustomData *data)
                 GstState pending_state;
                 gst_message_parse_state_changed (msg, &old_state, &new_state, &pending_state);
                 g_print ("[%d/%d - %02d:%02d:%02d] ", tm.tm_mday, tm.tm_mon+1 ,tm.tm_hour, tm.tm_min, tm.tm_sec);
-                g_print("GST_MESSAGE_STATE_CHANGED: %s state change: %s --> %s:\t\t Pending state: %s\n",
+                g_print("GST_MESSAGE_STATE_CHANGED: %s state change: %s --> %s:\t Pending state: %s\n",
                     GST_OBJECT_NAME(msg->src), gst_element_state_get_name (old_state), gst_element_state_get_name (new_state),gst_element_state_get_name (new_state));
                 // if(strcmp(GST_OBJECT_NAME(msg->src), "PIPELINE") == 0 && strcmp(gst_element_state_get_name (new_state), "NULL") == 0)
                 // {
@@ -175,13 +175,13 @@ int stream_main (int argc, char *argv[])
 
     /* Create the elements */
     data.loop       =   g_main_loop_new (NULL, FALSE);
-    data.pipeline   =   gst_pipeline_new ("PIPELINE__");
+    data.pipeline   =   gst_pipeline_new ("PIPELINE___");
 
-    data.source     =   gst_element_factory_make("v4l2src",         "v4l2source");
-    data.mpph264enc =   gst_element_factory_make("mpph264enc",      "mpph264enc");
-    data.queue      =   gst_element_factory_make("queue",           "queue_____");
-    data.h264parse  =   gst_element_factory_make("h264parse",       "h264parse_");
-    data.kvssink    =   gst_element_factory_make("kvssink",         "kvssink___");
+    data.source     =   gst_element_factory_make("v4l2src",         "v4l2source_");
+    data.mpph264enc =   gst_element_factory_make("mpph264enc",      "mpph264enc_");
+    data.queue      =   gst_element_factory_make("queue",           "queue______");
+    data.h264parse  =   gst_element_factory_make("h264parse",       "h264parse__");
+    data.kvssink    =   gst_element_factory_make("kvssink",         "kvssink____");
     
 
 

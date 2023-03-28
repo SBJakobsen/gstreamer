@@ -9,7 +9,7 @@
 #define FRAMEBUF 20
 #define RESINBUF 40
 #define CERTSBUF 60
-#define ENDPBUF 60
+#define ENDPBUF 70
 #define ROLEBUF 50
 #define AWSRBUF 20
 
@@ -23,6 +23,7 @@ typedef struct _CustomData {
   GstElement *x264enc;
   GstElement *h264parse;
   GstElement *kvssink;
+  GstStructure *iot_certificate;
 } CustomData;
 
 typedef struct _EnvVariables {
@@ -34,10 +35,13 @@ typedef struct _EnvVariables {
     int  framerate;
 
     char resin_device_uuid[RESINBUF];
-    char certsdir[CERTSBUF];
     char aws_endpoint[ENDPBUF];
     char role_alias[ROLEBUF];
     char aws_region[AWSRBUF];
+    char certsdir[CERTSBUF];
+    char certsdir_cert[CERTSBUF+12];
+    char certsdir_privkey[CERTSBUF+12];
+    char certsdir_rootca[CERTSBUF+12];
 } EnvVariables;
 
 
@@ -59,13 +63,23 @@ gboolean get_env_variables ( EnvVariables *vars){
         snprintf(vars->certsdir, CERTSBUF, "%s",            getenv("CERTSDIR")) >= CERTSBUF || 
         snprintf(vars->aws_endpoint, ENDPBUF, "%s",         getenv("AWS_ENDPOINT")) >= ENDPBUF || 
         snprintf(vars->role_alias, ROLEBUF, "%s",           getenv("ROLE_ALIAS")) >= ROLEBUF || 
-        snprintf(vars->aws_region, AWSRBUF, "%s",           getenv("AWS_REGION")) >= AWSRBUF
-        ){
+        snprintf(vars->aws_region, AWSRBUF, "%s",           getenv("AWS_REGION")) >= AWSRBUF)
+        {
         g_print("A environment variable did not fit within its' buffer\n");
         return false;
     }
 
-    // Implement converting WIDTH, HEIGHT and FRAMERATE to integers. 
+    strcat(vars->certsdir_cert, vars->certsdir);
+    strcat(vars->certsdir_cert, "/cert.pem");
+
+    strcat(vars->certsdir_privkey, vars->certsdir);
+    strcat(vars->certsdir_privkey, "/privkey.pem");
+
+    strcat(vars->certsdir_rootca, vars->certsdir);
+    strcat(vars->certsdir_rootca, "/root-CA.pem");
+
+
+    // Converting WIDTH, HEIGHT and FRAMERATE to integers and providing default values. 
     vars->width     = atoi(vars->charwidth);
     vars->height    = atoi(vars->charheight);
     vars->framerate = atoi(vars->charframerate);
@@ -85,6 +99,7 @@ gboolean get_env_variables ( EnvVariables *vars){
         vars->framerate = 30;
     }
     g_print("Values:\n\tWIDTH: %i\n", vars->width);
+    return true;
 
 }
 
@@ -239,31 +254,23 @@ int stream_main (int argc, char *argv[])
         exit(1);
     }
 
-    data.loop = g_main_loop_new (NULL, FALSE);
+    
 
-    gchar *fps_msg;
-    int delay_show_FPS = 0;
 
     /* Initialize GStreamer */
     gst_init (&argc, &argv);
 
-    if(argc > 1){
-        g_print("argc > 1, disabling quitloop\n");
-        quitloop = false;
-    }
-    else {
-        g_print("argc = 1, quitloop is enabled\n");
-    }
 
     /* Create the elements */
-    data.source         =   gst_element_factory_make("v4l2src",         "source");
-    data.videoconvert   =   gst_element_factory_make("videoconvert",    "videoconvert");
-    data.x264enc        =   gst_element_factory_make("x264enc",         "x264enc");
-    data.h264parse      =   gst_element_factory_make("h264parse",       "h264parse");
-    data.kvssink        =   gst_element_factory_make("kvssink",         "kvssink");
+    data.loop       =   g_main_loop_new (NULL, FALSE);
+    data.pipeline   =   gst_pipeline_new ("PIPELINE___");
 
-    /* Create the empty pipeline */
-    data.pipeline = gst_pipeline_new ("PIPELINE");
+    data.source         =   gst_element_factory_make("v4l2src",         "v4l2source__");
+    data.videoconvert   =   gst_element_factory_make("videoconvert",    "videoconvert");
+    data.x264enc        =   gst_element_factory_make("x264enc",         "x264enc_____");
+    data.h264parse      =   gst_element_factory_make("h264parse",       "h264parse___");
+    data.kvssink        =   gst_element_factory_make("kvssink",         "kvssink_____");
+
 
     if (!data.pipeline || !data.source || !data.videoconvert || !data.x264enc || !data.kvssink) {
         g_print ("Not all elements could be created.\n");
@@ -279,20 +286,23 @@ int stream_main (int argc, char *argv[])
 
     
     /* Build the pipeline */
-    gst_bin_add_many (GST_BIN (data.pipeline), data.source, data.videoconvert, data.x264enc, data.h264parse, data.kvssink, NULL); //fakesink removed from here as it should be null
+    gst_bin_add_many (GST_BIN (data.pipeline), data.source, data.videoconvert, data.x264enc, data.h264parse, data.kvssink, NULL);
+
 
     // source -> videoconvert -> x264enc -> 264parse -> kvssink
-
-
     if (gst_element_link (data.source, data.videoconvert) != TRUE) {
         g_print ("source and videoconvert could not be linked.\n");
         gst_object_unref (data.pipeline);
         return -1;
     }
 
-    GstCaps *caps1;
-    caps1 = gst_caps_from_string("video/x-raw,width=640,height=480,framerate=30/1");
-    if (gst_element_link_filtered(data.videoconvert, data.x264enc, caps1) != TRUE) {
+    GstCaps *caps0 = gst_caps_new_simple("video/x-raw",
+        "width",    G_TYPE_INT, vars.width,
+        "height",   G_TYPE_INT, vars.height,
+        "framerate",GST_TYPE_FRACTION, vars.framerate,1,
+        NULL);
+
+    if (gst_element_link_filtered(data.videoconvert, data.x264enc, caps0) != TRUE) {
         g_print ("Source and x264enc could not be linked\n");
         gst_object_unref (data.pipeline);
         return -1;
@@ -317,25 +327,31 @@ int stream_main (int argc, char *argv[])
         "do-timestamp", true,
         NULL);
 
-    GstStructure *iot_certificate = gst_structure_new_from_string ("iot-certificate,endpoint=crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com,cert-path=/home/soren/projects/gstreamer/desktop/certs/cert.pem,key-path=/home/soren/projects/gstreamer/desktop/certs/privkey.pem,ca-path=/home/soren/projects/gstreamer/desktop/certs/root-CA.pem,role-aliases=fbview-kinesis-video-access-role-alias");
-
+    //GstStructure *iot_certificate = gst_structure_new_from_string ("iot-certificate,endpoint=crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com,cert-path=/home/soren/projects/gstreamer/desktop/certs/cert.pem,key-path=/home/soren/projects/gstreamer/desktop/certs/privkey.pem,ca-path=/home/soren/projects/gstreamer/desktop/certs/root-CA.pem,role-aliases=fbview-kinesis-video-access-role-alias");
+    data.iot_certificate = gst_structure_new("iot-certificate",
+        "endpoint",     G_TYPE_STRING, vars.aws_endpoint,
+        "cert-path",    G_TYPE_STRING, vars.certsdir_cert,
+        "key-path",     G_TYPE_STRING, vars.certsdir_privkey,
+        "ca-path",      G_TYPE_STRING, vars.certsdir_rootca,
+        "role-aliases", G_TYPE_STRING, vars.role_alias,
+        NULL);
 
     g_print("About to set kvssink parameters!\n");
     /* Modify the sink's properties */
     g_object_set(data.kvssink, 
-        "stream-name", "15e0dc81d12c414aa02b49b990921c8d",
-        "framerate", (guint)30,
+        "stream-name", vars.resin_device_uuid,
+        "framerate", (guint)vars.framerate,
         "restart-on-error", true,
         "retention-period", 730,
-        "aws-region", "eu-west-1",
+        "aws-region", vars.aws_region,
         "log-config", "./kvs_log_configuration",
-        "iot-certificate", iot_certificate,
+        "iot-certificate", data.iot_certificate,
         NULL);
         
     g_print("Finished setting kvssink parameters!\n");
 
-    g_print("Test program over. Quitting\n");
-    return 0;
+    //g_print("Test program over. Quitting\n");
+    //return 0;
 
     /* Start playing */
     ret = gst_element_set_state (data.pipeline, GST_STATE_PLAYING);

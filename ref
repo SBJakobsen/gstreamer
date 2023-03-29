@@ -1,36 +1,23 @@
 ##### CURRENT TESTING #####
-      # Live
-      echo "Setting width to $WIDTH and height to $HEIGHT"
-      v4l2-ctl -d4 --set-fmt-video=width=$WIDTH,height=$HEIGHT
-      gst-launch-1.0 -vvv v4l2src do-timestamp=TRUE device=/dev/video4 \
-            ! video/x-raw,width=$WIDTH,height=$HEIGHT,framerate=$FRAMERATE/1,format=YUY2 \
-            ! mpph264enc \
-            ! h264parse \
-            ! video/x-h264,stream-format=avc,alignment=au \
-            ! kvssink stream-name="$RESIN_DEVICE_UUID" framerate=$FRAMERATE restart-on-error=true retention-period=730 log-config="/usr/src/app/kvs_log_configuration" iot-certificate="iot-certificate,endpoint=$AWS_ENDPOINT,cert-path=$CERTSDIR/cert.pem,key-path=$CERTSDIR/privkey.pem,ca-path=$CERTSDIR/root-CA.pem,role-aliases=$ROLE_ALIAS"
-            
-      # Live
-     
-      gst-launch-1.0 -vvv v4l2src do-timestamp=TRUE device=/dev/video4 \
-            ! video/x-raw,width=640,height=480,framerate=30/1 \
-            ! x264enc \
-            ! h264parse \
-            ! video/x-h264,stream-format=avc,alignment=au \
-            ! kvssink stream-name="15e0dc81d12c414aa02b49b990921c8d" framerate=30 restart-on-error=true retention-period=730 log-config="/usr/src/app/kvs_log_configuration" iot-certificate="iot-certificate,endpoint=crhxlosa5p0oo.credentials.iot.eu-west-1.amazonaws.com,cert-path=/home/soren/projects/gstreamer/desktop/certs/cert.pem,key-path=/home/soren/projects/gstreamer/desktop/certs/privkey.pem,ca-path=/home/soren/projects/gstreamer/desktop/certs/root-CA.pem,role-aliases=fbview-kinesis-video-access-role-alias"
+         
       
-            
+      # Devices
+      gst-launch-1.0 -v videotestsrc pattern=ball \
+            ! x264enc \
+            ! fakesink sync=false
+
 
 
       # PC
-      
       gst-launch-1.0 -vvv v4l2src do-timestamp=TRUE device=/dev/video4 \
-      ! videoconvert \
-      ! video/x-raw,width=640,height=480,framerate=30/1 \
-      ! x264enc \
+      ! video/x-h264,stream-format=byte-stream,alignment=au,width=1920,height=1080,framerate=30/1 \
       ! h264parse \
       ! video/x-h264,stream-format=avc,alignment=au \
-      ! fpsdisplaysink text-overlay=false video-sink=fakesink
+      ! kvssink stream-name="$RESIN_DEVICE_UUID" framerate=$FRAMERATE restart-on-error=true retention-period=730 log-config="/kvs_log_configuration" iot-certificate="iot-certificate,endpoint=$AWS_ENDPOINT,cert-path=$CERTSDIR/cert.pem,key-path=$CERTSDIR/privkey.pem,ca-path=$CERTSDIR/root-CA.pem,role-aliases=$ROLE_ALIAS"
+
       #! fakesink
+      #! autovideosink
+     
 
 
 
@@ -43,10 +30,6 @@
       ! video/x-h264,stream-format=avc,alignment=au \
       ! avdec_h264 \
       ! fpsdisplaysink
-
-      # Dev1
-
-      # Dev2
 
 
 
@@ -64,13 +47,14 @@
 
       # fpssink working on pc
       v4l2-ctl -d4 --set-fmt-video=width=640,height=480
-      gst-launch-1.0 -vvv v4l2src do-timestamp=TRUE device=/dev/video0 \
+      gst-launch-1.0 -vvv v4l2src do-timestamp=TRUE device=/dev/video4 \
       ! videoconvert \
       ! videoscale \
       ! video/x-raw,width=640,height=480 \
-      ! fpsdisplaysink text-overlay=false video-sink=fakesink
+      ! autovideosink
+      
+      #! fpsdisplaysink text-overlay=false video-sink=fakesink
 
-      #! autovideosink
 
 
       
@@ -100,13 +84,16 @@
 
 
       # Working rtsp pipeline
-      gst-launch-1.0 rtspsrc location=rtsp://root:Pakhus48@192.168.0.90/axis-media/media.amp latency=100 
-      ! queue 
-      ! rtph264depay 
-      ! h264parse 
-      ! avdec_h264 
-      ! videoconvert 
-      ! videoscale 
-      ! video/x-raw,width=640,height=480 
+      gst-launch-1.0 rtspsrc location=rtsp://root:Pakhus48@192.168.0.90/axis-media/media.amp latency=100 \
+      ! rtph264depay \
+      ! h264parse \
+      ! avdec_h264 \
+      ! videoconvert \
+      ! videoscale \
+      ! video/x-raw,width=640,height=480 \
       ! autovideosink
 
+      # efter h264parse
+      #! video/x-h264,stream-format=avc,alignment=au \
+      #! kvssink stream-name="$RESIN_DEVICE_UUID" framerate=$FRAMERATE restart-on-error=true retention-period=730 log-config="/kvs_log_configuration" iot-certificate="iot-certificate,endpoint=$AWS_ENDPOINT,cert-path=$CERTSDIR/cert.pem,key-path=$CERTSDIR/privkey.pem,ca-path=$CERTSDIR/root-CA.pem,role-aliases=$ROLE_ALIAS"
+      #
